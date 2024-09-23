@@ -15,3 +15,6 @@ start-db: create-vol
 		-v 'database-vol:/var/lib/postgresql/data' \
 		-p '5432:5432' \
 		'fball-data-database'
+
+
+run:

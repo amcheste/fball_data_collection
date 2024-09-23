@@ -1,6 +1,6 @@
-
 from pydantic import BaseModel
 from utils.database import connect
+
 class Position(BaseModel):
     id: int
     name: str
@@ -10,7 +10,7 @@ class Position(BaseModel):
         cur,conn = connect()
         stmt = '''
             INSERT INTO positions (id, name, abbreviation)
-            VALUES(%s, %s, %s)
+            VALUES(%s, %s, %s);
         '''
         args = (self.id, self.name, self.abbreviation)
 

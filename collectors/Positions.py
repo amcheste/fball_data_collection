@@ -14,6 +14,11 @@ def get_positions():
         position = get_position(item['$ref'])
         if position is not None:
             positions.append(position)
+            try:
+                position.save()
+                print(f"Added position {position.name}")
+            except psycopg.errors.UniqueViolation:
+                continue
 
 
     page_count = response.json().get("pageCount")
@@ -36,7 +41,6 @@ def get_positions():
                 except psycopg.errors.UniqueViolation:
                     continue
         page = page + 1
-
 
     return positions
 

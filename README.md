@@ -5,7 +5,7 @@
 ## Usage
 Data Types:
 * All (all) - 
-* Player Positions (position) - 
+* Player Positions (positions) - 
 * NFL Teams (teams) - 
 * Players (players) -
 * Games (games) - 
@@ -16,6 +16,12 @@ $ nfl_data collect --type=<Data Type> --start=<Start Year> --end=<End Year>
 ```
 
 ```
-nfl_data export --type=<Data Type> --dir=<Desitnation directory> [--force]
+nfl_data export --type=<Data Type> --dir=<Desitnation directory>
 ```
 ## Development
+
+## TODO
+* Is there a use case for --force?
+* Spinner
+* Log statements
+* 
