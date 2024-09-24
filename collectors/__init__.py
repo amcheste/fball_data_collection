@@ -1,2 +1,2 @@
 from collectors.positions import Positions
-from collectors.Teams import get_teams
+from collectors.teams import Teams

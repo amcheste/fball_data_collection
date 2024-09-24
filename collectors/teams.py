@@ -1,9 +1,20 @@
-import json
-
 import psycopg
 import requests
 
 from models import Team
+from utils.database import connect
+# TODO factory
+class Teams():
+    def __init__(self):
+        self.__teams = []
+
+    def get_data(self, start: int, end: int) -> list[Team]:
+        self.__teams = get_teams(start, end)
+
+        return self.__teams
+
+    def save(self, dest: str):
+        pass
 
 def get_team(team_url: str) -> Team:
     response = requests.get(team_url)
