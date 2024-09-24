@@ -2,7 +2,7 @@ import sys
 import argparse
 from datetime import datetime
 
-from collectors import get_positions, get_teams
+from collectors import Positions, get_teams
 
 
 
@@ -57,7 +57,8 @@ def main():
     args = process_args()
 
     if args.type == 'positions':
-        positions = get_positions()
+        position_collector = Positions()
+        positions = position_collector.get_data()
         print(f"Total positions {len(positions)}")
     elif args.type == 'teams':
         teams = get_teams(start=args.start, end=args.end)
