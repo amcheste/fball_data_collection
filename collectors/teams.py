@@ -13,7 +13,8 @@ class Teams():
 
         return self.__teams
 
-    def save(self, dest: str):
+    def export(self, dest: str):
+        #TODO
         pass
 
 def get_team(team_url: str) -> Team:

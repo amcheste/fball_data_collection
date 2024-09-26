@@ -3,7 +3,7 @@ import argparse
 from datetime import datetime
 
 from collectors import Positions, Teams
-
+from collectors.players import Players
 
 
 def process_args():
@@ -67,7 +67,10 @@ def main():
     elif args.type == 'games':
         pass
     elif args.type == 'players':
-        pass
+        players_collector = Players()
+        players = players_collector.get_data(start=args.start, end=args.end)
+        #print(players)
+        print(f"Total players {len(players)}")
     elif args.type == 'all':
         pass
     else:
@@ -77,7 +80,11 @@ def main():
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except ValueError as e:
-        sys.exit(255) # TODO magic number
+    #try:
+    #    main()
+    #except ValueError as e:
+    #    sys.exit(255) # TODO magic number
+    #except Exception as e:
+    #    print(e)
+    #    sys.exit(255)
+    main()

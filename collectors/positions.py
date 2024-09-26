@@ -14,7 +14,7 @@ class Positions():
         return self.__positions
 
     # TODO this needs help
-    def save(self, dest: str):
+    def export(self, dest: str):
         cur, conn = connect()
         # TODO Make dest a dir and add filename
         stmt = '''

@@ -17,4 +17,3 @@ start-db: create-vol
 		'fball-data-database'
 
 
-run:

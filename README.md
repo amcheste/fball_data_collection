@@ -24,4 +24,8 @@ nfl_data export --type=<Data Type> --dir=<Desitnation directory>
 * Is there a use case for --force?
 * Spinner
 * Log statements
-* 
+* contsants
+* push button run
+* Add discover mode to make idepodent?
+* add exports?
+* exception handling
