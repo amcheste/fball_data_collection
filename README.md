@@ -2,6 +2,8 @@
 
 ## Overview
 
+## Design
+
 ## Usage
 Data Types:
 * All (all) - 
@@ -10,6 +12,9 @@ Data Types:
 * Players (players) -
 * Games (games) - 
 
+```
+$ nfl_data discover --type=<Data Type> --start=<Start Year> --end=<End Year>
+```
 
 ```
 $ nfl_data collect --type=<Data Type> --start=<Start Year> --end=<End Year>

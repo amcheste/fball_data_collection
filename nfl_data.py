@@ -1,9 +1,7 @@
-import sys
 import argparse
 from datetime import datetime
 
-from collectors import Positions, Teams
-from collectors.players import Players
+import requests
 
 
 def process_args():
@@ -33,7 +31,7 @@ def process_args():
 def validate_args(args):
     print(args)
     # TODO constant
-    valid_commands = ['collect', 'export']
+    valid_commands = ['discover','collect', 'export']
     if args.command.lower() not in valid_commands:
         raise ValueError('Command must be "collect" or "export"')
     # TODO constants
@@ -56,35 +54,33 @@ def validate_args(args):
 def main():
     args = process_args()
 
-    if args.type == 'positions':
-        position_collector = Positions()
-        positions = position_collector.get_data()
-        print(f"Total positions {len(positions)}")
-    elif args.type == 'teams':
-        team_collector = Teams()
-        teams = team_collector.get_data(start=args.start, end=args.end)
-        print(f"Total teams {len(teams)}")
-    elif args.type == 'games':
-        pass
-    elif args.type == 'players':
-        players_collector = Players()
-        players = players_collector.get_data(start=args.start, end=args.end)
-        #print(players)
-        print(f"Total players {len(players)}")
-    elif args.type == 'all':
-        pass
-    else:
-        pass
+    if args.command.lower() == 'discover':
 
+        #curl - X
+        #'POST' \
+        #'http://127.0.0.1:8000/nfl_data/v1/positions/' \
+        #- H
+        #'accept: application/json' \
+        #- d
+        #''
+        url = "http://127.0.0.1:8000/nfl_data/v1/positions/"
+        response = requests.post(url)
+        print(response.status_code)
+        print(response.json())
+        return True
+    elif args.command.lower() == 'collect':
+        url = "http://127.0.0.1:8000/nfl_data/v1/positions/empty"
+        response = requests.get(url)
+        empty = response.json()
+
+        url = "http://127.0.0.1:8000/nfl_data/v1/positions"
+        response = requests.get(url)
+        total = len(response.json())
+
+        print(f"{total-empty} of {total} positions have been collected")
 
 
 
 if __name__ == '__main__':
-    #try:
-    #    main()
-    #except ValueError as e:
-    #    sys.exit(255) # TODO magic number
-    #except Exception as e:
-    #    print(e)
-    #    sys.exit(255)
+
     main()

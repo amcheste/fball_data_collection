@@ -1,5 +1,5 @@
 .idea/
 venv/
-collectors/__pycache__/
-utils/__pycache__/
-models/__pycache__/
+api/app/collectors/__pycache__/
+api/app/utils/__pycache__/
+api/app/models/__pycache__/
