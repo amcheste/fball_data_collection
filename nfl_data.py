@@ -1,5 +1,6 @@
 import argparse
 from datetime import datetime
+import pandas as pd
 
 import requests
 
@@ -12,10 +13,11 @@ def process_args():
     )
 
     # TODO: Fill out help etc
-    parser.add_argument('command')
+    parser.add_argument('command', type=str)
     parser.add_argument('--type', required=True)
-    parser.add_argument('--start', required=True, type=int)
-    parser.add_argument('--end', required=True, type=int)
+    #parser.add_argument('--start', required=True, type=int)
+    #parser.add_argument('--end', required=True, type=int)
+    parser.add_argument('--filename', type=str)
     args = parser.parse_args()
 
     try:
@@ -40,14 +42,14 @@ def validate_args(args):
         raise ValueError(f"Type must be one of {data_types}")
 
     # TODO magic number
-    if args.start < 1920:
-        raise ValueError('Start must be at least 1920')
+    #if args.start < 1920:
+    #    raise ValueError('Start must be at least 1920')
 
-    current_year = datetime.now().year
-    if args.end > current_year:
-        raise ValueError('End must be less than current year')
+    #current_year = datetime.now().year
+    #if args.end > current_year:
+    #    raise ValueError('End must be less than current year')
 
-    if args.start > args.end:
+    #if args.start > args.end:
         raise ValueError('Start date must be before end date')
 
 
@@ -78,6 +80,17 @@ def main():
         total = len(response.json())
 
         print(f"{total-empty} of {total} positions have been collected")
+    elif args.command.lower() == 'export':
+        url = "http://127.0.0.1:8000/nfl_data/v1/positions/"
+        response = requests.get(url)
+
+        data = response.json()
+        df = pd.DataFrame(data)
+        df = df.set_index("id")
+        df.to_csv(args.filename)
+
+    else:
+        pass
 
 
 

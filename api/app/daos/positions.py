@@ -17,6 +17,18 @@ async def list_positions(db_conn):
 
     return rows
 
+async def get_position(db_conn, id) -> Position | None:
+    async with db_conn.cursor(row_factory=class_row(Position)) as cur:
+        await cur.execute(
+            '''
+            SELECT * FROM positions WHERE id = %s;
+            ''',
+            (id,)
+        )
+        result = await cur.fetchone()
+
+        return result
+
 async def get_empty_position_count(db_conn):
     async with db_conn.cursor(row_factory=class_row(Position)) as cur:
         await cur.execute(

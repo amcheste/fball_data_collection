@@ -1,20 +1,21 @@
 import requests
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, HTTPException
 import urllib.parse
 import pika
+from fastapi.openapi.models import Response
 
 from app.models.position import Position
 from app.singleton import db_connection_pool
-from app.daos.positions import list_positions, init_position, get_empty_position_count
+from app.daos.positions import list_positions, init_position, get_empty_position_count, get_position
 
 from typing import List
 
 """
-    Create a router object for user API endpoints
+    Create a router object for position API endpoints
 """
 router = APIRouter(
     prefix="/nfl_data/v1/positions",
-    tags=["users"],
+    tags=["positions"],
 )
 
 @router.get(
@@ -43,6 +44,7 @@ async def get_empty_positions():
         count = await get_empty_position_count(db_conn)
 
     return count
+
 @router.post(
     "/",
     summary="Discover NFL positions",
@@ -60,6 +62,10 @@ async def discover_positions():
         tmp = urllib.parse.urlparse(item['$ref'])
         id = int(tmp.path.split("/")[-1])
         async with await db_connection_pool.get_connection() as db_conn:
+            position = await get_position(db_conn, id)
+            if position is not None:
+                continue
+
             await init_position(db_conn, id)
             connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
             channel = connection.channel()
@@ -67,7 +73,7 @@ async def discover_positions():
             channel.basic_publish(exchange='',
                               routing_key='positions',
                               body=item['$ref']
-        )
+            )
 
         count = count + 1
 
@@ -82,6 +88,9 @@ async def discover_positions():
         for item in response.json().get("items"):
             tmp = urllib.parse.urlparse(item['$ref'])
             id = int(tmp.path.split("/")[-1])
+            position = await get_position(db_conn, id)
+            if position is not None:
+                continue
             async with await db_connection_pool.get_connection() as db_conn:
                 await init_position(db_conn, id)
                 connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
@@ -97,3 +106,21 @@ async def discover_positions():
 
 
     return count
+
+@router.get(
+    "/{id}",
+    summary="Get details of a specific NFL positions",
+    status_code=status.HTTP_201_CREATED,
+    tags=['positions']
+)
+async def query_position(id: int):
+    async with await db_connection_pool.get_connection() as db_conn:
+        position = await get_position(db_conn, id)
+
+    if position is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Position with id {id} not found",
+        )
+
+    return position
