@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import positions
+from app.routers import positions, teams
 
 """
 Tags used for OpenAPI documentation
@@ -28,6 +28,7 @@ Load user endpoints to the NFL stats collection backend router.
 https://fastapi.tiangolo.com/tutorial/bigger-applications/
 """
 app.include_router(positions.router)
+app.include_router(teams.router)
 
 
 """

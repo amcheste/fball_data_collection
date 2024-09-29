@@ -6,9 +6,9 @@ CREATE TABLE positions (
 
 CREATE TABLE teams (
     id INT PRIMARY KEY NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    abbreviation VARCHAR(10) NOT NULL,
-    location VARCHAR(255) NOT NULL
+    name VARCHAR(255),
+    abbreviation VARCHAR(10),
+    location VARCHAR(255)
 );
 
 CREATE TABLE players(

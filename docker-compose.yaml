@@ -48,6 +48,17 @@ services:
       - "--type=positions"
       - "--mode=daemon"
 
+  team_collector:
+    build:
+        context: ./collectors
+    depends_on:
+      - rabbitmq
+      - database
+    command:
+      - "python3"
+      - "main.py"
+      - "--type=teams"
+      - "--mode=daemon"
 
 
 

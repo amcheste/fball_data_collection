@@ -5,6 +5,38 @@
 ## Design
 
 ## Usage
+
+### Application
+
+#### Local
+`$ make start`
+
+`$ make logs`
+
+`$ make stop`
+
+
+#### API Docs
+`http://127.0.0.1:8000/docs`
+#### Queue UI
+`http://localhost:15672`
+### CLI
+
+#### Discover
+
+
+`$ python3 nfl_data.py discover --type=positions`
+
+
+#### Collect
+
+`$ python3 nfl_data.py collect --type=positions`
+
+#### Export
+
+`$ python3 nfl_data.py export --type=positions --filename=<...>`
+
+### OLD
 Data Types:
 * All (all) - 
 * Player Positions (positions) - 

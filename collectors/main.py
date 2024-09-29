@@ -5,6 +5,7 @@ import requests
 
 from app.utils import database
 from app.lib.positions import collect_all_positions, collect_positions
+from app.lib.teams import collect_teams
 
 def process_args():
     parser = argparse.ArgumentParser(
@@ -50,6 +51,8 @@ def main():
     if args.type.lower() == 'positions':
         #collect_all_positions()
         collect_positions()
+    elif args.type.lower() == 'teams':
+        collect_teams()
 
 
 

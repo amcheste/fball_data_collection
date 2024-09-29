@@ -32,7 +32,7 @@ def process_args():
 
 def validate_args(args):
     print(args)
-    # TODO constant
+    # TODO constant, all/status?
     valid_commands = ['discover','collect', 'export']
     if args.command.lower() not in valid_commands:
         raise ValueError('Command must be "collect" or "export"')
@@ -50,7 +50,7 @@ def validate_args(args):
     #    raise ValueError('End must be less than current year')
 
     #if args.start > args.end:
-        raise ValueError('Start date must be before end date')
+        #raise ValueError('Start date must be before end date')
 
 
 def main():
@@ -81,7 +81,11 @@ def main():
 
         print(f"{total-empty} of {total} positions have been collected")
     elif args.command.lower() == 'export':
-        url = "http://127.0.0.1:8000/nfl_data/v1/positions/"
+        if args.type.lower() == 'positions':
+            url = "http://127.0.0.1:8000/nfl_data/v1/positions/"
+        elif args.type.lower() == 'teams':
+            url = "http://127.0.0.1:8000/nfl_data/v1/teams/"
+
         response = requests.get(url)
 
         data = response.json()
