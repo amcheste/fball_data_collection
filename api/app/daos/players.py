@@ -1,13 +1,14 @@
-import urllib
-
-import pika
-import requests
+from typing import List
 from psycopg.rows import class_row
 
 from app.models import Player
-from app.singleton import db_connection_pool
 
-async def list_players(db_conn):
+async def list_players(db_conn) -> List[Player]:
+    """
+    Returns a list of all players from the database.
+    :param db_conn: Database connection.
+    :return: List of Player objects.
+    """
     async with db_conn.cursor(row_factory=class_row(Player)) as cur:
         await cur.execute(
             '''
@@ -23,7 +24,12 @@ async def list_players(db_conn):
     return rows
 
 
-async def get_pending_player_count(db_conn):
+async def get_pending_player_count(db_conn) -> int:
+    """
+    Returns the number of players currently being collected
+    :param db_conn: Database connection.
+    :return: The number of players being collected.
+    """
     async with db_conn.cursor(row_factory=class_row(Player)) as cur:
         await cur.execute(
             '''
@@ -35,6 +41,11 @@ async def get_pending_player_count(db_conn):
         return len(result)
 
 async def init_player(db_conn, id: int):
+    """
+    Add initial player entry in the database.
+    :param db_conn: Database connection.
+    :param id: Player ID
+    """
     async with db_conn.cursor() as cur:
         stmt = '''
         INSERT INTO players (id)
@@ -46,9 +57,13 @@ async def init_player(db_conn, id: int):
 
         await db_conn.commit()
 
-
-
-async def get_player(db_conn, id: int) -> Player:
+async def get_player(db_conn, id: int) -> Player | None:
+    """
+    Gets player details stored in the database.
+    :param db_conn: Database connection.
+    :param id: Player ID
+    :return: Player object
+    """
     async with db_conn.cursor(row_factory=class_row(Player)) as cur:
         await cur.execute(
             '''

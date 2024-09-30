@@ -2,14 +2,12 @@ import requests
 from fastapi import APIRouter, status, HTTPException
 import urllib.parse
 import pika
-from watchfiles import awatch
+from typing import List
 
 from app.models import YearRange
 from app.models.team import Team
 from app.singleton import db_connection_pool
-from app.daos.teams import list_teams, init_team, get_empty_team_count, get_team
-
-from typing import List
+from app.daos.teams import list_teams, init_team, get_pending_team_count, get_team
 
 """
     Create a router object for team API endpoints
@@ -27,6 +25,10 @@ router = APIRouter(
     tags=["teams"],
 )
 async def get_teams() -> List[Team]:
+    """
+    REST endpoint that returns the list of NFL teams.
+    :return: List of NFL team objects.
+    """
     teams = []
     async with await db_connection_pool.get_connection() as db_conn:
         teams = await list_teams(db_conn)
@@ -41,9 +43,13 @@ async def get_teams() -> List[Team]:
     tags=["teams"],
 )
 async def list_teams_pending() -> int:
+    """
+    REST endpoint that returns the list of NFL team pending detail collection.
+    :return:
+    """
     count = 0
     async with await db_connection_pool.get_connection() as db_conn:
-        count = await get_empty_team_count(db_conn)
+        count = await get_pending_team_count(db_conn)
 
     return count
 
@@ -55,6 +61,11 @@ async def list_teams_pending() -> int:
     tags=["teams"],
 )
 async def discover_team(years: YearRange) -> int:
+    """
+    REST endpoint that discovers NFL teams.
+    :param years: Year range object.
+    :return: Number of new unique NFL teams identified.
+    """
     year = years.start
     print(years)
     count = 0
@@ -67,7 +78,6 @@ async def discover_team(years: YearRange) -> int:
             # TODO exception
 
         for item in response.json().get("items"):
-            print(item)
             tmp = urllib.parse.urlparse(item['$ref'])
             id = int(tmp.path.split("/")[-1])
             async with await db_connection_pool.get_connection() as db_conn:
@@ -76,7 +86,6 @@ async def discover_team(years: YearRange) -> int:
                     continue
 
                 await init_team(db_conn, id)
-                print("1")
                 connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
                 channel = connection.channel()
                 channel.queue_declare(queue='teams', durable=True)
@@ -84,7 +93,6 @@ async def discover_team(years: YearRange) -> int:
                                       routing_key='teams',
                                       body=item['$ref']
                 )
-                print("2")
             count = count + 1
 
         page_count = response.json().get("pageCount")
@@ -122,10 +130,16 @@ async def discover_team(years: YearRange) -> int:
 @router.get(
     "/{id}",
     summary="Get details of a specific NFL team",
+    response_model=Team,
     status_code=status.HTTP_201_CREATED,
     tags=['teams']
 )
 async def query_team(id: int):
+    """
+    REST endpoint that returns the details of a specific NFL team.
+    :param id NFL team ID.
+    :return: NFL team object.
+    """
     async with await db_connection_pool.get_connection() as db_conn:
         team = await get_team(db_conn, id)
 

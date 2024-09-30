@@ -23,7 +23,11 @@ router = APIRouter(
     status_code=status.HTTP_200_OK,
     tags=['players']
 )
-async def get_positions():
+async def get_players() -> List[Player]:
+    """
+    REST endpoint that lists all NFL players
+    :return: List of NFL players
+    """
     players = []
     async with await db_connection_pool.get_connection() as db_conn:
         players = await list_players(db_conn)
@@ -37,7 +41,11 @@ async def get_positions():
     status_code=status.HTTP_200_OK,
     tags=['players']
 )
-async def get_pending_players():
+async def get_pending_players() -> int:
+    """
+    Rest endpoint that returns the number of pending players.
+    :return: Number of pending players.
+    """
     count = 0
     async with await db_connection_pool.get_connection() as db_conn:
         count = await get_pending_player_count(db_conn)
@@ -48,9 +56,14 @@ async def get_pending_players():
     "/",
     summary="Discover NFL player",
     status_code=status.HTTP_201_CREATED,
+    response_model=int,
     tags=['players']
 )
-async def discover_players():
+async def discover_players() -> int:
+    """
+    Discover NFL players.
+    :return: The number of unique players discovered.
+    """
     url = "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes?limit=1000&active=true"
     count = 0
     response = requests.get(url)
@@ -111,10 +124,16 @@ async def discover_players():
 @router.get(
     "/{id}",
     summary="Get details of a specific NFL player",
+    response_model=Player,
     status_code=status.HTTP_201_CREATED,
     tags=['players']
 )
-async def query_player(id: int):
+async def query_player(id: int) -> Player:
+    """
+    REST endpoint that returns details of a specific NFL player.
+    :param id: NFL Player ID
+    :return: NFL Player object
+    """
     async with await db_connection_pool.get_connection() as db_conn:
         player = await get_player(db_conn, id)
 

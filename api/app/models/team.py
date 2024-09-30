@@ -2,10 +2,18 @@ from pydantic import BaseModel
 from typing import Optional
 
 class Team(BaseModel):
-    id: int                             # "id": "20"
-    name: Optional[str] = None          # "displayName": "New York Jets"
-    location: Optional[str] = None      # "location": "New York"
-    abbreviation: Optional[str] = None  # "abbreviation": "NYJ"
+    """
+    NFL Team object.
+
+    :param id: NFL Team ID (e.g. 20).
+    :param name: NFL Team name (e.g. New York Jets).
+    :param location: NFL Team location (e.g. New York).
+    :param abbreviation: NFL Team abbreviation (e.g. NYJ).
+    """
+    id: int
+    name: Optional[str] = None
+    location: Optional[str] = None
+    abbreviation: Optional[str] = None
 
 
 #

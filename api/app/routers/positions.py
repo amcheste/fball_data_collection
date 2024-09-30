@@ -6,9 +6,7 @@ from typing import List
 
 from app.models.position import Position
 from app.singleton import db_connection_pool
-from app.daos.positions import list_positions, init_position, get_empty_position_count, get_position
-
-
+from app.daos.positions import list_positions, init_position, get_pending_position_count, get_position
 
 """
     Create a router object for position API endpoints
@@ -25,7 +23,11 @@ router = APIRouter(
     status_code=status.HTTP_200_OK,
     tags=['positions']
 )
-async def get_positions():
+async def get_positions() -> List[Position]:
+    """
+    REST endpoint that returns the list of NFL positions.
+    :return: List of NFL position objects.
+    """
     positions = []
     async with await db_connection_pool.get_connection() as db_conn:
         positions = await list_positions(db_conn)
@@ -33,15 +35,20 @@ async def get_positions():
     return positions
 
 @router.get(
-    "/empty",
+    "/pending",
+    summary="Get pending NFL positions",
     response_model=int,
     status_code=status.HTTP_200_OK,
     tags=['positions']
 )
-async def get_empty_positions():
+async def get_pending_positions() -> int:
+    """
+    REST endpoint that returns the number of NFL positions we are currently collecting data for.
+    :return: The number of NFL positions pending data collection.
+    """
     count = 0
     async with await db_connection_pool.get_connection() as db_conn:
-        count = await get_empty_position_count(db_conn)
+        count = await get_pending_position_count(db_conn)
 
     return count
 
@@ -49,9 +56,14 @@ async def get_empty_positions():
     "/",
     summary="Discover NFL positions",
     status_code=status.HTTP_201_CREATED,
+    response_model=int,
     tags=['positions']
 )
 async def discover_positions():
+    """
+    REST endpoint that discovers NFL positions.
+    :return: Number of unique NFL positions identified.
+    """
     url = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions"
     count = 0
     response = requests.get(url)
@@ -110,10 +122,16 @@ async def discover_positions():
 @router.get(
     "/{id}",
     summary="Get details of a specific NFL positions",
+    response_model=Position,
     status_code=status.HTTP_201_CREATED,
     tags=['positions']
 )
-async def query_position(id: int):
+async def query_position(id: int) -> Position:
+    """
+    REST endpoint that returns details on a specific NFL position.
+    :param id: NFL position ID.
+    :return: NFL position object.
+    """
     async with await db_connection_pool.get_connection() as db_conn:
         position = await get_position(db_conn, id)
 

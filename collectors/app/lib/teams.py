@@ -1,15 +1,16 @@
 import time
-
 import pika
 import requests
 
 from app.utils import database
 
-
 def collect_all_teams():
     pass
 
 def collect_teams():
+    """
+    Async data collector that pulls NFL teams off the queue.
+    """
     for i in range(0,25):
         try:
             connection = pika.BlockingConnection(
@@ -21,13 +22,10 @@ def collect_teams():
             print("Failed to connect to rabbitmq, sleeping for 5 seconds...")
             time.sleep(5)
 
-
     channel = connection.channel()
 
     channel.queue_declare(queue='teams', durable=True)
     print(' [*] Waiting for messages. To exit press CTRL+C')
-
-
 
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(queue='teams', on_message_callback=teams_callback)
@@ -35,6 +33,13 @@ def collect_teams():
     channel.start_consuming()
 
 def teams_callback(ch, method, properties, body):
+    """
+    Callback function for collecting position data.
+    :param ch: RabbitMQ channel
+    :param method: RabbitMQ method.
+    :param properties: Queue properties.
+    :param body: Message body.
+    """
     print(f" [x] Received {body.decode()}")
     print(" [x] Done")
 

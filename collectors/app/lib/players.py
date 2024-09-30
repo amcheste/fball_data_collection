@@ -1,6 +1,5 @@
 import time
 import urllib
-
 import pika
 import requests
 
@@ -10,6 +9,9 @@ def collect_all_players():
     pass
 
 def collect_players():
+    """
+    Async collector that pulls player details.
+    """
     for i in range(0, 25):
         try:
             connection = pika.BlockingConnection(
@@ -24,20 +26,24 @@ def collect_players():
     channel = connection.channel()
 
     channel.queue_declare(queue='players', durable=True)
-    print(' [*] Waiting for messages. To exit press CTRL+C')
+    print(' [*] Waiting for messages.')
 
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(queue='players', on_message_callback=players_callback)
 
     channel.start_consuming()
 
-
 def players_callback(ch, method, properties, body):
+    """
+    Collect player details callback function.
+    :param ch: RabbitMQ channel.
+    :param method: RabbitMQ method details.
+    :param properties: Channel properties.
+    :param body: Message body.
+    """
     print(f" [x] Received {body.decode()}")
-    print(" [x] Done")
 
     response = requests.get(body)
-    #print(response.json())
     data = response.json()
 
     # Constants
@@ -92,17 +98,21 @@ def players_callback(ch, method, properties, body):
             data['id']
         )
 
-        print(args)
-
     cur, conn = database.connect()
     cur.execute(stmt, args)
     conn.commit()
 
     # Acknowledge the message
     ch.basic_ack(delivery_tag=method.delivery_tag)
+    print(" [x] Done")
 
-
-def get_team_id(url):
+# TODO return type
+def get_team_id(url: str):
+    """
+    Extracts the team ID from a url.
+    :param url: URL containing a team ID.
+    :return: Team ID.
+    """
     #http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2024/teams/20?lang=en&region=us'
     tmp = urllib.parse.urlparse(url)
     tmp = tmp.path.split("/")

@@ -1,26 +1,20 @@
 import time
-
 import pika
 import requests
 
 from app.utils import database
 
-
 def collect_all_positions():
+    """
+    Async data collector for all NFL positions in the queue.
+    """
     connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
     channel = connection.channel()
     response = requests.get('http://guest:guest@localhost:15672/api/queues/%2f/positions')
     messages = response.json()['messages']
 
     for method_frame, properties, body in channel.consume('positions'):
-
-        # Display the message parts
-        print(method_frame)
-        print(properties)
-        print(body)
-
         response = requests.get(body)
-        print(response.json())
         data = response.json()
         cur, conn = database.connect()
         if data['leaf']:
@@ -47,7 +41,7 @@ def collect_all_positions():
         if method_frame.delivery_tag == messages:
             break
 
-        # Cancel the consumer and return any pending messages
+    # Cancel the consumer and return any pending messages
     requeued_messages = channel.cancel()
     print('Requeued %i messages' % requeued_messages)
 
@@ -56,7 +50,9 @@ def collect_all_positions():
     connection.close()
 
 def collect_positions():
-
+    """
+    Async data collector that pulls NFL positions off the queue.
+    """
     for i in range(0,25):
         try:
             connection = pika.BlockingConnection(
@@ -72,9 +68,7 @@ def collect_positions():
     channel = connection.channel()
 
     channel.queue_declare(queue='positions', durable=True)
-    print(' [*] Waiting for messages. To exit press CTRL+C')
-
-
+    print(' [*] Waiting for messages.')
 
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(queue='positions', on_message_callback=positions_callback)
@@ -82,26 +76,32 @@ def collect_positions():
     channel.start_consuming()
 
 def positions_callback(ch, method, properties, body):
+    """
+    Callback function for collecting position data.
+    :param ch: RabbitMQ channel
+    :param method: RabbitMQ method.
+    :param properties: Queue properties.
+    :param body: Message body.
+    """
     print(f" [x] Received {body.decode()}")
     print(" [x] Done")
 
     response = requests.get(body)
-    print(response.json())
     data = response.json()
     cur, conn = database.connect()
     if data['leaf']:
         stmt = '''
-                     UPDATE positions SET
-                     name = %s,
-                     abbreviation = %s
-                     WHERE id = %s;
-                 '''
+            UPDATE positions SET
+            name = %s,
+            abbreviation = %s
+            WHERE id = %s;
+        '''
         args = (data['displayName'], data['abbreviation'], data['id'])
         cur.execute(stmt, args)
     else:
         stmt = '''
-                     DELETE FROM positions WHERE id = %s;
-                 '''
+            DELETE FROM positions WHERE id = %s;
+        '''
         args = (data['id'],)
         cur.execute(stmt, args)
 

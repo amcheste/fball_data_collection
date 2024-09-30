@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.routers import positions, teams, players
 
 """
@@ -9,6 +10,14 @@ tags_metadata = [
     {
         "name": "positions",
         "description": "NFL Player Positions",
+    },
+    {
+        "name": "teams",
+        "description": "NFL Teams",
+    },
+    {
+        "name": "players",
+        "description": "NFL Players",
     }
 ]
 

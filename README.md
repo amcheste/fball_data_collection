@@ -72,3 +72,5 @@ nfl_data export --type=<Data Type> --dir=<Desitnation directory>
 * add table for defered/declined/excluded
 * cloud
 https://gist.github.com/nntrn/ee26cb2a0716de0947a0a4e9a157bc1c
+* is the start/end year used for players?  
+* should we offer acitive / all for players

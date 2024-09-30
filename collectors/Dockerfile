@@ -1,7 +1,5 @@
 FROM docker.io/library/python:3.12.4-alpine3.20
 
-
-
 COPY requirements.txt .
 RUN apk add gcc musl-dev libffi-dev g++ && \
     pip install --upgrade pip && \

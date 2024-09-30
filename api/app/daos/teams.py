@@ -1,14 +1,14 @@
-import urllib
-
-import pika
-import requests
+from typing import List
 from psycopg.rows import class_row
 
 from app.models import Team
-from app.singleton import db_connection_pool
 
-
-async def list_teams(db_conn):
+async def list_teams(db_conn) -> List[Team]:
+    """
+    Returns the list of NFL teams stored in the database.
+    :param db_conn: Database connection.
+    :return: List of NFL team objects.
+    """
     async with db_conn.cursor(row_factory=class_row(Team)) as cur:
         await cur.execute(
             '''
@@ -23,8 +23,12 @@ async def list_teams(db_conn):
 
     return rows
 
-
-async def get_empty_team_count(db_conn):
+async def get_pending_team_count(db_conn)-> int:
+    """
+    Returns the number of teams we are currently collecting data on.
+    :param db_conn: Database connection.
+    :return: Number of pending NFL teams.
+    """
     async with db_conn.cursor(row_factory=class_row(Team)) as cur:
         await cur.execute(
             '''
@@ -36,7 +40,12 @@ async def get_empty_team_count(db_conn):
         return len(result)
 
 async def init_team(db_conn, id: int):
-    async with db_conn.cursor(row_factory=class_row(Team)) as cur:
+    """
+    Creates an initial NFL team database record.
+    :param db_conn: Database connection.
+    :param id: NFL team ID.
+    """
+    async with db_conn.cursor() as cur:
         stmt = '''
         INSERT INTO teams (id)
         VALUES (%s);
@@ -48,6 +57,12 @@ async def init_team(db_conn, id: int):
         await db_conn.commit()
 
 async def get_team(db_conn, id: int) -> Team:
+    """
+    Returns details on an NFL team.
+    :param db_conn: Database connection.
+    :param id: NFL team ID.
+    :return: NFL team object.
+    """
     async with db_conn.cursor(row_factory=class_row(Team)) as cur:
         await cur.execute(
             '''
