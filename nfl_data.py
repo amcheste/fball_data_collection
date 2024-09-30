@@ -85,6 +85,8 @@ def main():
             url = "http://127.0.0.1:8000/nfl_data/v1/positions/"
         elif args.type.lower() == 'teams':
             url = "http://127.0.0.1:8000/nfl_data/v1/teams/"
+        elif args.type.lower() == 'players':
+            url = "http://127.0.0.1:8000/nfl_data/v1/players/"
 
         response = requests.get(url)
 
