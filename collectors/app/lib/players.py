@@ -1,0 +1,168 @@
+import time
+import urllib
+
+import pika
+import requests
+
+from app.utils import database
+
+def collect_all_players():
+    pass
+
+def collect_players():
+    for i in range(0, 25):
+        try:
+            connection = pika.BlockingConnection(
+                pika.ConnectionParameters(host='rabbitmq'))
+            # pika.ConnectionParameters(host='localhost')) #TODO env vars
+            print("Successfully connected to rabbitmq")
+            break
+        except pika.exceptions.AMQPConnectionError:
+            print("Failed to connect to rabbitmq, sleeping for 5 seconds...")
+            time.sleep(5)
+
+    channel = connection.channel()
+
+    channel.queue_declare(queue='players', durable=True)
+    print(' [*] Waiting for messages. To exit press CTRL+C')
+
+    channel.basic_qos(prefetch_count=1)
+    channel.basic_consume(queue='players', on_message_callback=players_callback)
+
+    channel.start_consuming()
+
+
+def players_callback(ch, method, properties, body):
+    print(f" [x] Received {body.decode()}")
+    print(" [x] Done")
+
+    response = requests.get(body)
+    #print(response.json())
+    data = response.json()
+
+    # Constants
+    FANTASY_POSITIONS = {"1": "QB",
+                         "2": "RB",
+                         "3": "WR",
+                         "4": "TE",
+                         "5": "K",
+                         "16": "DST"}
+    if data['position']['id'] not in FANTASY_POSITIONS:
+        stmt = '''
+        DELETE FROM players WHERE id = %s;
+        '''
+        args = (data['id'],)
+    else:
+        stmt = '''
+        UPDATE players SET
+        name = %s,
+        height = %s,
+        weight = %s,
+        experience = %s,
+        position = %s,
+        active = %s,
+        status = %s,
+        age = %s,
+        team = %s
+        WHERE id = %s;
+        '''
+
+        if 'age' not in data:
+            data['age'] = None
+
+        if 'team' not in data:
+            data['team'] = None
+
+        if 'height' not in data:
+            data['height'] = None
+
+        if 'weight' not in data:
+            data['weight'] = None
+
+        args = (
+            data['displayName'],
+            data['height'],
+            data['weight'],
+            data['experience']['years'],
+            data['position']['id'],
+            data['active'],
+            data['status']['abbreviation'],
+            data['age'],
+            get_team_id(data['team']['$ref']),
+            data['id']
+        )
+
+        print(args)
+
+    cur, conn = database.connect()
+    cur.execute(stmt, args)
+    conn.commit()
+
+    # Acknowledge the message
+    ch.basic_ack(delivery_tag=method.delivery_tag)
+
+
+def get_team_id(url):
+    #http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2024/teams/20?lang=en&region=us'
+    tmp = urllib.parse.urlparse(url)
+    tmp = tmp.path.split("/")
+    for i in range(len(tmp)):
+        if tmp[i] == 'teams':
+            return tmp[i+1]
+
+
+
+    #    if 'statistics' in data:
+    #        tmp['statistics'] = data['statistics']
+    #    if 'statisticslog' in data:
+    #        tmp['stats_url'] = data['statisticslog']['$ref']
+
+#{
+#    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/4429202/statisticslog?lang=en&region=us",
+#    "entries": [
+#        {
+#            "season": {
+#                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2024?lang=en&region=us"
+#            },
+#            "statistics": [
+#                {
+#                    "type": "total",
+#                    "statistics": {
+#                        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2024/types/1/athletes/4429202/statistics/0?lang=en&region=us"
+#                    }
+#                },
+#                {
+#                    "type": "team",
+#                    "team": {
+#                        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2024/teams/20?lang=en&region=us"
+#                    },
+#                    "statistics": {
+#                        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2024/types/1/teams/20/athletes/4429202/statistics?lang=en&region=us"
+#                    }
+#                }
+#            ]
+#        },
+#        {
+#            "season": {
+#                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2023?lang=en&region=us"
+#            },
+#            "statistics": [
+#                {
+#                    "type": "total",
+#                    "statistics": {
+#                        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2023/types/2/athletes/4429202/statistics/0?lang=en&region=us"
+#                    }
+#                },
+#                {
+#                    "type": "team",
+#                    "team": {
+#                        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2023/teams/20?lang=en&region=us"
+#                    },
+#                    "statistics": {
+#                        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2023/types/2/teams/20/athletes/4429202/statistics?lang=en&region=us"
+#                    }
+#                }
+#            ]
+#        }
+#    ]
+#}

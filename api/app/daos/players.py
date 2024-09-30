@@ -4,15 +4,14 @@ import pika
 import requests
 from psycopg.rows import class_row
 
-from app.models import Team
+from app.models import Player
 from app.singleton import db_connection_pool
 
-
-async def list_teams(db_conn):
-    async with db_conn.cursor(row_factory=class_row(Team)) as cur:
+async def list_players(db_conn):
+    async with db_conn.cursor(row_factory=class_row(Player)) as cur:
         await cur.execute(
             '''
-            SELECT * FROM teams;
+            SELECT * FROM players;
             '''
         )
         result = await cur.fetchall()
@@ -24,21 +23,21 @@ async def list_teams(db_conn):
     return rows
 
 
-async def get_empty_team_count(db_conn):
-    async with db_conn.cursor(row_factory=class_row(Team)) as cur:
+async def get_pending_player_count(db_conn):
+    async with db_conn.cursor(row_factory=class_row(Player)) as cur:
         await cur.execute(
             '''
-            SELECT * FROM teams WHERE name IS NULL;
+            SELECT * FROM players WHERE name IS NULL;
             '''
         )
         result = await cur.fetchall()
 
         return len(result)
 
-async def init_team(db_conn, id: int):
-    async with db_conn.cursor(row_factory=class_row(Team)) as cur:
+async def init_player(db_conn, id: int):
+    async with db_conn.cursor() as cur:
         stmt = '''
-        INSERT INTO teams (id)
+        INSERT INTO players (id)
         VALUES (%s);
         '''
         args = (id,)
@@ -47,11 +46,13 @@ async def init_team(db_conn, id: int):
 
         await db_conn.commit()
 
-async def get_team(db_conn, id: int) -> Team:
-    async with db_conn.cursor(row_factory=class_row(Team)) as cur:
+
+
+async def get_player(db_conn, id: int) -> Player:
+    async with db_conn.cursor(row_factory=class_row(Player)) as cur:
         await cur.execute(
             '''
-            SELECT * FROM teams WHERE id = %s;
+            SELECT * FROM players WHERE id = %s;
             ''',
             (id,)
         )

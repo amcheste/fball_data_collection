@@ -13,16 +13,13 @@ CREATE TABLE teams (
 
 CREATE TABLE players(
     id INT PRIMARY KEY NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    weight FLOAT NOT NULL,
-    height FLOAT NOT NULL,
-    experience INT NOT NULL,
-    active BOOLEAN NOT NULL,
-    status VARCHAR(255) NOT NULL,
-    position INT NOT NULL,
+    name VARCHAR(255),
+    weight FLOAT,
+    height FLOAT,
+    experience INT,
+    active BOOLEAN,
+    status VARCHAR(255),
+    position INT,
     age INT,
     team INT
 );
-
-
-SELECT id FROM positions;

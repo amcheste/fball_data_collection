@@ -2,6 +2,7 @@
 
 ## Overview
 
+
 ## Design
 
 ## Usage
@@ -66,3 +67,8 @@ nfl_data export --type=<Data Type> --dir=<Desitnation directory>
 * Add discover mode to make idepodent?
 * add exports?
 * exception handling
+* Task
+* 1 task at a time
+* add table for defered/declined/excluded
+* cloud
+https://gist.github.com/nntrn/ee26cb2a0716de0947a0a4e9a157bc1c

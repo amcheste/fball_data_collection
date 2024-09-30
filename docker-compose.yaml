@@ -60,6 +60,17 @@ services:
       - "--type=teams"
       - "--mode=daemon"
 
+  player_collector:
+    build:
+        context: ./collectors
+    depends_on:
+      - rabbitmq
+      - database
+    command:
+      - "python3"
+      - "main.py"
+      - "--type=players"
+      - "--mode=daemon"
 
 
 volumes:
