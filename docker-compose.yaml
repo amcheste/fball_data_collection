@@ -1,0 +1,78 @@
+services:
+  database:
+    build:
+      context: ./db
+    ports:
+        - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: nfl_data
+      POSTGRES_USER: nfl_data
+      POSTGRES_DB: nfl_data
+    volumes:
+    - db-data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+  api:
+    build:
+      context: ./api
+    depends_on:
+      - database
+      - rabbitmq
+    ports:
+        - "8000:8000"
+    environment:
+      DB_NAME: nfl_data
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_USER: nfl_data
+      DB_PASSWORD: nfl_data
+
+
+  position_collector:
+    build:
+        context: ./collectors
+    depends_on:
+      - rabbitmq
+      - database
+    command:
+      - "python3"
+      - "main.py"
+      - "--type=positions"
+      - "--mode=daemon"
+
+  team_collector:
+    build:
+        context: ./collectors
+    depends_on:
+      - rabbitmq
+      - database
+    command:
+      - "python3"
+      - "main.py"
+      - "--type=teams"
+      - "--mode=daemon"
+
+  player_collector:
+    build:
+        context: ./collectors
+    depends_on:
+      - rabbitmq
+      - database
+    command:
+      - "python3"
+      - "main.py"
+      - "--type=players"
+      - "--mode=daemon"
+
+
+volumes:
+  db-data: {}
+  rabbitmq-data: {}
