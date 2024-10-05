@@ -59,13 +59,15 @@ nfl_data export --type=<Data Type> --dir=<Desitnation directory>
 ## Development
 
 ## TODO
+AMC: Create these as issues
+* Add stat collection
 * Is there a use case for --force?
 * Spinner
 * Log statements
 * contsants
-* push button run
+* Add tests
 * Add discover mode to make idepodent?
-* add exports?
+* clean up repeated code
 * exception handling
 * Task
 * 1 task at a time
@@ -74,3 +76,5 @@ nfl_data export --type=<Data Type> --dir=<Desitnation directory>
 https://gist.github.com/nntrn/ee26cb2a0716de0947a0a4e9a157bc1c
 * is the start/end year used for players?  
 * should we offer acitive / all for players
+* Is there a use call for all on the cli
+* How to make this project low code / extendable
