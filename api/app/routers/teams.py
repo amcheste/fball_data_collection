@@ -56,7 +56,7 @@ async def list_teams_pending() -> int:
 @router.post(
     "/",
     summary="Discover NFL team",
-    status_code=status.HTTP_200_OK,
+    status_code=status.HTTP_201_CREATED,
     response_model=int,
     tags=["teams"],
 )

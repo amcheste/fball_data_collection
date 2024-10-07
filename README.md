@@ -58,19 +58,7 @@ nfl_data export --type=<Data Type> --dir=<Desitnation directory>
 ```
 ## Development
 
-## TODO
-* Is there a use case for --force?
-* Spinner
-* Log statements
-* contsants
-* push button run
-* Add discover mode to make idepodent?
-* add exports?
-* exception handling
-* Task
-* 1 task at a time
-* add table for defered/declined/excluded
-* cloud
+
+## References
+
 https://gist.github.com/nntrn/ee26cb2a0716de0947a0a4e9a157bc1c
-* is the start/end year used for players?  
-* should we offer acitive / all for players
