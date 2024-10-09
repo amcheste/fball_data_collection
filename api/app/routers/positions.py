@@ -1,9 +1,14 @@
+import json
+
 import requests
 from fastapi import APIRouter, status, HTTPException
 import urllib.parse
 import pika
 from typing import List
 
+from app.daos.tasks import create_task
+from app.models.queue import Queue
+from app.models import Task
 from app.models.position import Position
 from app.singleton import db_connection_pool
 from app.daos.positions import list_positions, init_position, get_pending_position_count, get_position
@@ -56,68 +61,29 @@ async def get_pending_positions() -> int:
     "/",
     summary="Discover NFL positions",
     status_code=status.HTTP_201_CREATED,
-    response_model=int,
+    response_model=Task,
     tags=['positions']
 )
-async def discover_positions():
-    """
-    REST endpoint that discovers NFL positions.
-    :return: Number of unique NFL positions identified.
-    """
-    url = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions"
-    count = 0
-    response = requests.get(url)
-    if response.status_code != 200:
-        print("Failed to get first page of positions")
-        # TODO exception
-    for item in response.json().get("items"):
-        tmp = urllib.parse.urlparse(item['$ref'])
-        id = int(tmp.path.split("/")[-1])
-        async with await db_connection_pool.get_connection() as db_conn:
-            position = await get_position(db_conn, id)
-            if position is not None:
-                continue
+async def discover_positions() -> Task:
+    #
+    # Accept task by creating new Task instance stored in the DB.
+    task = await create_task('discover', 'positions')
 
-            await init_position(db_conn, id)
-            connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
-            channel = connection.channel()
-            channel.queue_declare(queue='positions', durable=True)
-            channel.basic_publish(exchange='',
-                              routing_key='positions',
-                              body=item['$ref']
-            )
+    #
+    # Add it to the task processing queue.\
+    queue = Queue('tasks')
+    queue.connect()
+    data = {
+        'id': f"{task.id}",
+        'command': 'discover',
+        'data_type': 'positions'
+    }
+    queue.publish(json.dumps(data))
 
-        count = count + 1
+    #
+    # Return the task object to the user
+    return task
 
-    page_count = response.json().get("pageCount")
-    page = response.json().get("pageIndex")
-    while page < page_count:
-        response = requests.get(f"{url}?page={page + 1}")
-        if response.status_code != 200:
-            print(f"Failed to get page number {page} of positions")  # TODO logger?
-            # TODO: Exception
-
-        for item in response.json().get("items"):
-            tmp = urllib.parse.urlparse(item['$ref'])
-            id = int(tmp.path.split("/")[-1])
-            position = await get_position(db_conn, id)
-            if position is not None:
-                continue
-            async with await db_connection_pool.get_connection() as db_conn:
-                await init_position(db_conn, id)
-                connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
-                channel = connection.channel()
-                channel.queue_declare(queue='positions', durable=True)
-                channel.basic_publish(exchange='',
-                                      routing_key='positions',
-                                      body=item['$ref']
-                )
-            count = count + 1
-
-        page = page + 1
-
-
-    return count
 
 @router.get(
     "/{id}",

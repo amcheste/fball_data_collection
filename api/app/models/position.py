@@ -11,3 +11,4 @@ class Position(BaseModel):
     id: int
     name: Optional[str] = None
     abbreviation: Optional[str] = None
+    url: str

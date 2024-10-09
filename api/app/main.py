@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import positions, teams, players
+from app.routers import positions, teams, players, tasks
 
 """
 Tags used for OpenAPI documentation
@@ -39,6 +39,7 @@ https://fastapi.tiangolo.com/tutorial/bigger-applications/
 app.include_router(positions.router)
 app.include_router(teams.router)
 app.include_router(players.router)
+app.include_router(tasks.router)
 
 
 """

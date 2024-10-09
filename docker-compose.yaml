@@ -72,6 +72,18 @@ services:
       - "--type=players"
       - "--mode=daemon"
 
+  task_collector:
+    build:
+      context: ./collectors
+    depends_on:
+      - rabbitmq
+      - database
+    command:
+      - "python3"
+      - "main.py"
+      - "--type=tasks"
+      - "--mode=daemon"
+
 
 volumes:
   db-data: {}
