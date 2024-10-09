@@ -6,8 +6,13 @@ from app.models import Task
 from app.models.step import Step
 from app.singleton import db_connection_pool
 
-
 async def create_task(command: str, data_type: str):
+    """
+    Create a new task entry in the tasks database
+    :param command: command type (e.g. DISCOVER | COLLECT)
+    :param data_type: data type (e.g. positions, teams, players, etc.)
+    :return: Task object
+    """
     command = command.upper()
     async with await db_connection_pool.get_connection() as db_conn:
         async with db_conn.cursor() as cur:
@@ -25,11 +30,22 @@ async def create_task(command: str, data_type: str):
 
             await db_conn.commit()
 
-    task = Task(id=id, command=command.upper(), data_type=data_type, time_created=time_created, time_modified=time_modified, status='ACCEPTED')
+    task = Task(
+        id=id,
+        command=command.upper(),
+        data_type=data_type,
+        time_created=time_created,
+        time_modified=time_modified,
+        status='ACCEPTED'
+    )
 
     return task
 
 async def get_tasks():
+    """
+    Returns the list of tasks
+    :return: List of task objects
+    """
     async with await db_connection_pool.get_connection() as db_conn:
         async with db_conn.cursor(row_factory=class_row(Task)) as cur:
             await cur.execute('SELECT * FROM tasks;')
@@ -37,7 +53,12 @@ async def get_tasks():
 
             return result
 
-async def query_task(task_id: UUID, count: int = 0) -> Task:
+async def query_task(task_id: UUID) -> Task:
+    """
+    Returns details on a specific task.
+    :param task_id: Task ID (UUID).
+    :return: Returns a task object.
+    """
     async with await db_connection_pool.get_connection() as db_conn:
         async with db_conn.cursor(row_factory=class_row(Task)) as cur:
 
@@ -58,6 +79,12 @@ async def query_task(task_id: UUID, count: int = 0) -> Task:
     return row
 
 async def get_open_step_count(task_id: UUID, data_type: str) -> int:
+    """
+    Returns the number of open steps of a specific task.
+    :param task_id: Task ID (UUID).
+    :param data_type: Data type (e.g. positions, teams, players, etc.)
+    :return: Number of open steps.
+    """
     if data_type == 'positions':
         stmt = '''
         SELECT * FROM position_collection WHERE task_id = %s and status != 'COMPLETED';
@@ -75,6 +102,12 @@ async def get_open_step_count(task_id: UUID, data_type: str) -> int:
         return len(rows)
 
 async def get_step_list(task_id: UUID, data_type: str) -> List[Step]:
+    """
+    Returns the list of steps of a specific task.
+    :param task_id: Task ID (UUID).
+    :param data_type: Data type (e.g. positions, teams, players, etc.)
+    :return: List of steps.
+    """
     if data_type == 'positions':
         stmt = '''
         SELECT * FROM position_collection WHERE task_id = %s;

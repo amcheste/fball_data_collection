@@ -38,8 +38,22 @@ CREATE TABLE tasks(
     time_modified timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-
+-- TODO make one table and add a column for data type?
 CREATE TABLE position_collection(
+    id INT PRIMARY KEY NOT NULL,
+    task_id uuid REFERENCES tasks(id),
+    url VARCHAR(255) NOT NULL,
+    status status NOT NULL DEFAULT 'ACCEPTED'
+);
+
+CREATE TABLE team_collection(
+    id INT PRIMARY KEY NOT NULL,
+    task_id uuid REFERENCES tasks(id),
+    url VARCHAR(255) NOT NULL,
+    status status NOT NULL DEFAULT 'ACCEPTED'
+);
+
+CREATE TABLE player_collection(
     id INT PRIMARY KEY NOT NULL,
     task_id uuid REFERENCES tasks(id),
     url VARCHAR(255) NOT NULL,

@@ -84,7 +84,6 @@ services:
       - "--type=tasks"
       - "--mode=daemon"
 
-
 volumes:
   db-data: {}
   rabbitmq-data: {}

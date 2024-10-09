@@ -120,7 +120,7 @@ def positions_callback(ch, method, properties, body):
     conn.commit()
 
     #
-    # TODO If there are no more in progress update task status
+    # If there are no more in progress update task status
     stmt = '''
     SELECT id FROM position_collection WHERE status = 'IN_PROGRESS';
     '''

@@ -1,9 +1,6 @@
 import json
-
 import requests
 from fastapi import APIRouter, status, HTTPException
-import urllib.parse
-import pika
 from typing import List
 
 from app.daos.tasks import create_task
@@ -65,16 +62,20 @@ async def get_pending_positions() -> int:
     tags=['positions']
 )
 async def discover_positions() -> Task:
+    """
+    Create a task for discovering NFL positions.
+    :return: Task object
+    """
     #
     # Accept task by creating new Task instance stored in the DB.
     task = await create_task('discover', 'positions')
 
     #
-    # Add it to the task processing queue.\
+    # Add it to the task processing queue.
     queue = Queue('tasks')
     queue.connect()
     data = {
-        'id': f"{task.id}",
+        'id': f"{task.id}", # This needs to be seralized into a string and not a UUID object
         'command': 'discover',
         'data_type': 'positions'
     }

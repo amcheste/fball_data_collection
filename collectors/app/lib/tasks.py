@@ -70,7 +70,7 @@ def collect_handler(task_id: str, data_type: str):
     #
     # Get list of pending items
     stmt = '''
-            SELECT id, url FROM positions WHERE name IS NULL;
+    SELECT id, url FROM positions WHERE name IS NULL;
     '''
     cur, conn = database.connect()
     cur.execute(stmt)
