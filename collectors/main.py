@@ -4,9 +4,10 @@ import pika
 import requests
 
 from app.utils import database
-from app.lib.positions import collect_all_positions, collect_positions
+from app.lib.positions import collect_positions
 from app.lib.teams import collect_teams
 from app.lib.players import collect_players
+from app.lib.tasks import collect_tasks
 
 def process_args():
     parser = argparse.ArgumentParser(
@@ -34,7 +35,7 @@ def validate_args(args):
     print(args)
 
     # TODO constants
-    data_types = ['positions', 'teams', 'players', 'games']
+    data_types = ['tasks','positions', 'teams', 'players', 'games']
     if args.type.lower() not in data_types:
         raise ValueError(f"Type must be one of {data_types}")
 
@@ -49,20 +50,14 @@ def validate_args(args):
 def main():
     args = process_args()
 
-    if args.type.lower() == 'positions':
-        #collect_all_positions()
+    if args.type.lower() == 'tasks':
+        collect_tasks()
+    elif args.type.lower() == 'positions':
         collect_positions()
     elif args.type.lower() == 'teams':
         collect_teams()
     elif args.type.lower() == 'players':
         collect_players()
-
-
-
-
-
-
-
 
 
 if __name__ == '__main__':

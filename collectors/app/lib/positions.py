@@ -1,53 +1,57 @@
+import datetime
+import json
 import time
+import urllib
 import pika
 import requests
+import logging
 
 from app.utils import database
 
-def collect_all_positions():
-    """
-    Async data collector for all NFL positions in the queue.
-    """
-    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-    channel = connection.channel()
-    response = requests.get('http://guest:guest@localhost:15672/api/queues/%2f/positions')
-    messages = response.json()['messages']
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-    for method_frame, properties, body in channel.consume('positions'):
-        response = requests.get(body)
-        data = response.json()
+def discover_positions():
+    url = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions"
+    response = requests.get(url)
+    if response.status_code != 200:
+        print("Failed to get first page of positions")
+        # TODO exception
+
+    for item in response.json().get("items"):
+        tmp = urllib.parse.urlparse(item['$ref'])
+        id = int(tmp.path.split("/")[-1])
+
+        stmt = '''
+            INSERT INTO positions (id, url)
+            VALUES (%s, %s);
+            '''
+        args = (id, item['$ref'])
         cur, conn = database.connect()
-        if data['leaf']:
-            stmt = '''
-                 UPDATE positions SET
-                 name = %s,
-                 abbreviation = %s
-                 WHERE id = %s;
-             '''
-            args = (data['displayName'], data['abbreviation'], data['id'])
-            cur.execute(stmt, args)
-        else:
-            stmt = '''
-                 DELETE FROM positions WHERE id = %s;
-             '''
-            args = (data['id'],)
-            cur.execute(stmt, args)
-
+        cur.execute(stmt, args)
         conn.commit()
-        # Acknowledge the message
-        channel.basic_ack(method_frame.delivery_tag)
 
-        # Escape out of the loop after 10 messages
-        if method_frame.delivery_tag == messages:
-            break
+    page_count = response.json().get("pageCount")
+    page = response.json().get("pageIndex")
+    while page < page_count:
+        response = requests.get(f"{url}?page={page + 1}")
+        if response.status_code != 200:
+            print(f"Failed to get page number {page} of positions")  # TODO logger?
+            # TODO: Exception
 
-    # Cancel the consumer and return any pending messages
-    requeued_messages = channel.cancel()
-    print('Requeued %i messages' % requeued_messages)
+        for item in response.json().get("items"):
+            tmp = urllib.parse.urlparse(item['$ref'])
+            id = int(tmp.path.split("/")[-1])
+            stmt = '''
+                        INSERT INTO positions (id, url)
+                        VALUES (%s, %s);
+                        '''
+            args = (id, item['$ref'])
+            cur, conn = database.connect()
+            cur.execute(stmt, args)
+            conn.commit()
 
-    # Close the channel and the connection
-    channel.close()
-    connection.close()
+        page = page + 1
 
 def collect_positions():
     """
@@ -83,10 +87,9 @@ def positions_callback(ch, method, properties, body):
     :param properties: Queue properties.
     :param body: Message body.
     """
-    print(f" [x] Received {body.decode()}")
-    print(" [x] Done")
-
-    response = requests.get(body)
+    data = json.loads(body)
+    task_id = data['task_id']
+    response = requests.get(data['url'])
     data = response.json()
     cur, conn = database.connect()
     if data['leaf']:
@@ -106,6 +109,41 @@ def positions_callback(ch, method, properties, body):
         cur.execute(stmt, args)
 
     conn.commit()
-    # Acknowledge the message
 
+    #
+    # Update status for this position
+    stmt = '''
+    UPDATE position_collection SET
+    status = %s
+    WHERE id = %s;
+    '''
+    #TODO time created/modified?
+    args = ('COMPLETED', data['id'])
+    cur, conn = database.connect()
+    cur.execute(stmt, args)
+    conn.commit()
+
+    #
+    # If there are no more in progress update task status
+    stmt = '''
+    SELECT id FROM position_collection WHERE status = 'ACCEPTED' and task_id = %s;
+    '''
+    cur, conn = database.connect()
+    args = (task_id,)
+    cur.execute(stmt,args)
+    rows = cur.fetchall()
+    if len(rows) == 0:
+        stmt = '''
+        UPDATE tasks SET
+        status = %s,
+        time_modified = %s
+        WHERE id = %s;
+        '''
+        args = ('COMPLETED', datetime.datetime.now(), task_id)
+        cur, conn = database.connect()
+        cur.execute(stmt, args)
+        conn.commit()
+
+    #
+    # Acknowledge the message
     ch.basic_ack(delivery_tag=method.delivery_tag)
