@@ -4,8 +4,12 @@ import time
 import urllib
 import pika
 import requests
+import logging
 
 from app.utils import database
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def discover_positions():
     url = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions"
@@ -122,10 +126,11 @@ def positions_callback(ch, method, properties, body):
     #
     # If there are no more in progress update task status
     stmt = '''
-    SELECT id FROM position_collection WHERE status = 'IN_PROGRESS';
+    SELECT id FROM position_collection WHERE status = 'ACCEPTED' and task_id = %s;
     '''
     cur, conn = database.connect()
-    cur.execute(stmt)
+    args = (task_id,)
+    cur.execute(stmt,args)
     rows = cur.fetchall()
     if len(rows) == 0:
         stmt = '''

@@ -72,7 +72,7 @@ async def add_task(task: TaskInput) -> Task:
     task = await create_task(command=task.command, data_type=task.data_type)
 
     #
-    # Add it to the task processing queue.\
+    # Add it to the task processing queue.
     queue = Queue('tasks')
     queue.connect()
     data = {

@@ -90,6 +90,7 @@ def collect_handler(task_id: str, data_type: str):
         conn.commit()
         data = {
             'task_id': task_id,
+            'id': row[0],
             'url': row[1],
         }
         connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
