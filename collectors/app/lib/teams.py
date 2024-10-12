@@ -1,3 +1,5 @@
+import datetime
+import json
 import time
 import urllib
 import pika
@@ -98,11 +100,9 @@ def teams_callback(ch, method, properties, body):
     :param properties: Queue properties.
     :param body: Message body.
     """
-    print(f" [x] Received {body.decode()}")
-    print(" [x] Done")
-
-    response = requests.get(body)
-    print(response.json())
+    data = json.loads(body)
+    task_id = data['task_id']
+    response = requests.get(data['url'])
     data = response.json()
     cur, conn = database.connect()
 
@@ -117,6 +117,41 @@ def teams_callback(ch, method, properties, body):
     cur.execute(stmt, args)
 
     conn.commit()
-    # Acknowledge the message
 
+    #
+    # Update status for this position
+    stmt = '''
+        UPDATE team_collection SET
+        status = %s
+        WHERE id = %s;
+        '''
+    # TODO time created/modified?
+    args = ('COMPLETED', data['id'])
+    cur, conn = database.connect()
+    cur.execute(stmt, args)
+    conn.commit()
+
+    #
+    # If there are no more in progress update task status
+    stmt = '''
+        SELECT id FROM team_collection WHERE status = 'ACCEPTED' and task_id = %s;
+        '''
+    cur, conn = database.connect()
+    args = (task_id,)
+    cur.execute(stmt, args)
+    rows = cur.fetchall()
+    if len(rows) == 0:
+        stmt = '''
+            UPDATE tasks SET
+            status = %s,
+            time_modified = %s
+            WHERE id = %s;
+            '''
+        args = ('COMPLETED', datetime.datetime.now(), task_id)
+        cur, conn = database.connect()
+        cur.execute(stmt, args)
+        conn.commit()
+
+    #
+    # Acknowledge the message
     ch.basic_ack(delivery_tag=method.delivery_tag)
