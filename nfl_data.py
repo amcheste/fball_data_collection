@@ -90,31 +90,32 @@ def main():
         print(f"\t  Time Created: {response.json()['time_created']}")
 
     elif args.command.lower() == 'collect':
+        url = "http://127.0.0.1:8000/nfl_data/v1/tasks/"
         if args.type.lower() == 'positions':
-            # TODO: Create collect task
-            url = "http://127.0.0.1:8000/nfl_data/v1/tasks/"
             data = {
                 "command": "collect",
                 "data_type": "positions"
             }
-            response = requests.post(url, data=json.dumps(data))
-            if response.status_code != 201:
-                print(response.status_code)
-                print(response.json())
-                raise RuntimeError(f"Failed to start discovery of {args.type}")
-
-
-            print(f"\t       Task ID: {response.json()['id']}")
-            print(f"\t   Task Status: {response.json()['status']}")
-            print(f"\t  Time Created: {response.json()['time_created']}")
         elif args.type.lower() == 'teams':
-            pending_url = "http://127.0.0.1:8000/nfl_data/v1/teams/pending"
-            total_url = "http://127.0.0.1:8000/nfl_data/v1/teams"
+            data = {
+                "command": "collect",
+                "data_type": "teams"
+            }
         elif args.type.lower() == 'players':
             pending_url = "http://127.0.0.1:8000/nfl_data/v1/players/pending"
             total_url = "http://127.0.0.1:8000/nfl_data/v1/players"
         else:
             raise ValueError(f"Invalid type to collect: {args.type}")
+
+        response = requests.post(url, data=json.dumps(data))
+        if response.status_code != 201:
+            print(response.status_code)
+            print(response.json())
+            raise RuntimeError(f"Failed to start discovery of {args.type}")
+
+        print(f"\t       Task ID: {response.json()['id']}")
+        print(f"\t   Task Status: {response.json()['status']}")
+        print(f"\t  Time Created: {response.json()['time_created']}")
 
     elif args.command.lower() == 'status':
         #TODO get task status

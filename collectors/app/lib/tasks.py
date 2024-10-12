@@ -73,7 +73,13 @@ def discover_handler(data_type: str, data: dict):
         discover_teams(data)
 
 def collect_handler(task_id: str, data_type: str):
+    if data_type.lower() == 'positions':
+        collect_positions(task_id)
+    elif data_type.lower() == 'teams':
+        collect_teams(task_id)
 
+
+def collect_positions(task_id: str):
     #
     # Get list of pending items
     stmt = '''
@@ -108,6 +114,40 @@ def collect_handler(task_id: str, data_type: str):
             body=json.dumps(data)
         )
 
+def collect_teams(task_id: str):
+    #
+    # Get list of pending items
+    stmt = '''
+    SELECT id, url FROM teams WHERE name IS NULL;
+    '''
+    cur, conn = database.connect()
+    cur.execute(stmt)
+    results = cur.fetchall()
+
+    #
+    # Loop through and add to the positions task table and positions queue
+    for row in results:
+        logger.info(row)
+        stmt = '''
+        INSERT INTO team_collection(id, task_id, url)
+        VALUES(%s, %s, %s);
+        '''
+        args = (row[0], task_id, row[1])
+        cur, conn = database.connect()
+        cur.execute(stmt, args)
+        conn.commit()
+        data = {
+            'task_id': task_id,
+            'id': row[0],
+            'url': row[1],
+        }
+        connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+        channel = connection.channel()
+        channel.queue_declare(queue='teams', durable=True)
+        channel.basic_publish(exchange='',
+            routing_key='teams',
+            body=json.dumps(data)
+        )
 
 def update_status(task_id: str, status: str):
     logger.error(status)
