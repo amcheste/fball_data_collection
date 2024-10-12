@@ -5,6 +5,7 @@ import pika
 import logging
 
 from app.lib.positions import discover_positions
+from app.lib.teams import discover_teams
 from app.utils import database
 
 logging.basicConfig(level=logging.INFO)
@@ -46,12 +47,16 @@ def task_callback(ch, method, properties, body):
     update_status(task_id=task_id, status='IN_PROGRESS')
 
     if command.lower() == 'discover':
-        discover_handler(data_type)
+        logger.info(f"Discovering {data_type}")
+        discover_handler(data_type, data)
+        logger.info(f"Completed {data_type} discovery")
+
         #
         # Mark task completed
         update_status(task_id=task_id, status='COMPLETED')
     elif command.lower() == 'collect':
         collect_handler(task_id, data_type)
+        update_status(task_id=task_id, status='COMPLETED')
         # Keep the top level task as IN_PROGRESS and let the position queue handler manage status
     else:
         pass
@@ -61,9 +66,11 @@ def task_callback(ch, method, properties, body):
     print(" [x] Done")
 
 
-def discover_handler(data_type: str):
+def discover_handler(data_type: str, data: dict):
     if data_type.lower() == 'positions':
         discover_positions()
+    elif data_type.lower() == 'teams':
+        discover_teams(data)
 
 def collect_handler(task_id: str, data_type: str):
 

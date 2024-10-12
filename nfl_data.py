@@ -34,7 +34,6 @@ def process_args():
 
 def validate_args(args):
     print(args)
-    # TODO constant, all/status?
     valid_commands = ['discover','collect', 'export', 'status']
     if args.command.lower() not in valid_commands:
         raise ValueError('Command must be "collect" or "export"')

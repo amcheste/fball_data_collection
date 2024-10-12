@@ -14,7 +14,7 @@ class Team(BaseModel):
     name: Optional[str] = None
     location: Optional[str] = None
     abbreviation: Optional[str] = None
-
+    url: str
 
 #
 # TODO: Additional data to consider
