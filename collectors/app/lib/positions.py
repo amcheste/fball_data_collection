@@ -23,9 +23,9 @@ def discover_positions():
         id = int(tmp.path.split("/")[-1])
 
         stmt = '''
-            INSERT INTO positions (id, url)
-            VALUES (%s, %s);
-            '''
+        INSERT INTO positions (id, url)
+        VALUES (%s, %s);
+        '''
         args = (id, item['$ref'])
         cur, conn = database.connect()
         cur.execute(stmt, args)

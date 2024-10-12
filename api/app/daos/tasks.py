@@ -89,17 +89,25 @@ async def get_open_step_count(task_id: UUID, data_type: str) -> int:
         stmt = '''
         SELECT * FROM position_collection WHERE task_id = %s and status != 'COMPLETED';
         '''
-        args = (task_id,)
-        async with await db_connection_pool.get_connection() as db_conn:
-            async with db_conn.cursor() as cur:
-                await cur.execute(stmt, args)
-                rows = await cur.fetchall()
-                await db_conn.commit()
+    elif data_type == 'teams':
+        stmt = '''
+        SELECT * FROM team_collection WHERE task_id = %s and status != 'COMPLETED';
+        '''
+    else:
+        raise ValueError(f'Invalid data type: {data_type}')
 
-        if rows is None:
-            return 0
 
-        return len(rows)
+    args = (task_id,)
+    async with await db_connection_pool.get_connection() as db_conn:
+        async with db_conn.cursor() as cur:
+            await cur.execute(stmt, args)
+            rows = await cur.fetchall()
+            await db_conn.commit()
+
+    if rows is None:
+        return 0
+
+    return len(rows)
 
 async def get_step_list(task_id: UUID, data_type: str) -> List[Step]:
     """
@@ -112,10 +120,17 @@ async def get_step_list(task_id: UUID, data_type: str) -> List[Step]:
         stmt = '''
         SELECT * FROM position_collection WHERE task_id = %s;
         '''
-        args = (task_id,)
-        async with await db_connection_pool.get_connection() as db_conn:
-            async with db_conn.cursor(row_factory=class_row(Step)) as cur:
-                await cur.execute(stmt, args)
-                rows = await cur.fetchall()
-                await db_conn.commit()
-        return rows
+    elif data_type == 'teams':
+        stmt = '''
+        SELECT * FROM team_collection WHERE task_id = %s;
+        '''
+    else:
+        raise ValueError(f'Invalid data type: {data_type}')
+
+    args = (task_id,)
+    async with await db_connection_pool.get_connection() as db_conn:
+        async with db_conn.cursor(row_factory=class_row(Step)) as cur:
+            await cur.execute(stmt, args)
+            rows = await cur.fetchall()
+            await db_conn.commit()
+    return rows

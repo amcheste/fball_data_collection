@@ -9,7 +9,8 @@ CREATE TABLE teams (
     id INT PRIMARY KEY NOT NULL,
     name VARCHAR(255),
     abbreviation VARCHAR(10),
-    location VARCHAR(255)
+    location VARCHAR(255),
+    url VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE players(
@@ -22,7 +23,8 @@ CREATE TABLE players(
     status VARCHAR(255),
     position INT,
     age INT,
-    team INT
+    team INT,
+    url VARCHAR(255) NOT NULL
 );
 
 CREATE TYPE commands AS ENUM ('DISCOVER', 'COLLECT');

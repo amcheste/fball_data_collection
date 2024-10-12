@@ -1,11 +1,69 @@
 import time
+import urllib
 import pika
+import psycopg
 import requests
+import logging
 
 from app.utils import database
 
-def collect_all_teams():
-    pass
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def discover_teams(data: dict):
+    logger.info("Starting team discovery")
+    year = data['start']
+
+    while year <= data['end']:
+        url = f"http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/{year}/teams/"
+        response = requests.get(url)
+        if response.status_code != 200:
+            print("Failed to get first page of positions")
+            # TODO exception
+
+        for item in response.json().get("items"):
+            tmp = urllib.parse.urlparse(item['$ref'])
+            id = int(tmp.path.split("/")[-1])
+
+            stmt = '''
+            INSERT INTO teams (id, url)
+            VALUES (%s, %s);
+            '''
+            args = (id, item['$ref'])
+            try:
+                cur, conn = database.connect()
+                cur.execute(stmt, args)
+                conn.commit()
+            except psycopg.errors.UniqueViolation:
+                continue
+
+            page_count = response.json().get("pageCount")
+            page = response.json().get("pageIndex")
+            while page < page_count:
+                response = requests.get(f"{url}?page={page + 1}")
+                if response.status_code != 200:
+                    print(f"Failed to get page number {page} of positions")  # TODO logger?
+                    # TODO: Exception
+
+                for item in response.json().get("items"):
+                    tmp = urllib.parse.urlparse(item['$ref'])
+                    id = int(tmp.path.split("/")[-1])
+
+                    stmt = '''
+                        INSERT INTO teams (id, url)
+                        VALUES (%s, %s);
+                    '''
+                    args = (id, item['$ref'])
+                    try:
+                        cur, conn = database.connect()
+                        cur.execute(stmt, args)
+                        conn.commit()
+                    except psycopg.errors.UniqueViolation:
+                        continue
+                page = page + 1
+        year = year +1
+
 
 def collect_teams():
     """
