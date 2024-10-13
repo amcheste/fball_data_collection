@@ -102,8 +102,10 @@ def main():
                 "data_type": "teams"
             }
         elif args.type.lower() == 'players':
-            pending_url = "http://127.0.0.1:8000/nfl_data/v1/players/pending"
-            total_url = "http://127.0.0.1:8000/nfl_data/v1/players"
+            data = {
+                'command': 'collect',
+                'data_type': 'players'
+            }
         else:
             raise ValueError(f"Invalid type to collect: {args.type}")
 
@@ -126,8 +128,8 @@ def main():
         print(f"\t    Task Status: {response.json()['status']}")
         print(f"\t   Time Created: {response.json()['time_created']}")
         print(f"\t  Time Modified: {response.json()['time_modified']}")
-        if 'open_steps' in response.json() and 'total_steps' in response.json():
-            print(f"\tRemaining Steps: {response.json()['open_steps']} of {response.json()['total_steps']}")
+        if 'open_steps' in response.json() and 'total_steps' in response.json() and response.json()['total_steps'] > 0:
+                print(f"\tRemaining Steps: {response.json()['open_steps']} of {response.json()['total_steps']}")
             #TODO: add verbose mode
     elif args.command.lower() == 'export':
         if args.type.lower() == 'positions':

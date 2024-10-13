@@ -1,3 +1,5 @@
+import datetime
+import json
 import time
 import urllib
 import pika
@@ -92,8 +94,10 @@ def players_callback(ch, method, properties, body):
     :param body: Message body.
     """
     print(f" [x] Received {body.decode()}")
-
-    response = requests.get(body)
+    data = json.loads(body)
+    task_id = data['task_id']
+    url = data['url']
+    response = requests.get(url)
     data = response.json()
 
     # Constants
@@ -151,6 +155,41 @@ def players_callback(ch, method, properties, body):
     cur, conn = database.connect()
     cur.execute(stmt, args)
     conn.commit()
+
+    #
+    # Update status for this player
+    stmt = '''
+    UPDATE player_collection SET
+    status = %s
+    WHERE id = %s;
+    '''
+    #TODO time created/modified?
+    args = ('COMPLETED', data['id'])
+    cur, conn = database.connect()
+    cur.execute(stmt, args)
+    conn.commit()
+
+    #
+    # If there are no more in progress update task status
+    stmt = '''
+    SELECT id FROM player_collection WHERE status = 'ACCEPTED' and task_id = %s;
+    '''
+    cur, conn = database.connect()
+    args = (task_id,)
+    cur.execute(stmt,args)
+    rows = cur.fetchall()
+    logger.error(f"AMC: {len(rows)}")
+    if len(rows) == 0:
+        stmt = '''
+        UPDATE tasks SET
+        status = %s,
+        time_modified = %s
+        WHERE id = %s;
+        '''
+        args = ('COMPLETED', datetime.datetime.now(), task_id)
+        cur, conn = database.connect()
+        cur.execute(stmt, args)
+        conn.commit()
 
     # Acknowledge the message
     ch.basic_ack(delivery_tag=method.delivery_tag)
