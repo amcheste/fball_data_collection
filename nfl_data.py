@@ -1,10 +1,9 @@
 import argparse
 import json
+import time
 from datetime import datetime
 import pandas as pd
-
 import requests
-
 
 def process_args():
     parser = argparse.ArgumentParser(
@@ -20,6 +19,7 @@ def process_args():
     parser.add_argument('--end', type=int)
     parser.add_argument('--filename', type=str)
     parser.add_argument('--task_id', type=str)
+    parser.add_argument("--wait",action='store_true' )
     args = parser.parse_args()
 
     try:
@@ -30,7 +30,6 @@ def process_args():
         raise ValueError
 
     return args
-
 
 def validate_args(args):
     print(args)
@@ -55,81 +54,106 @@ def validate_args(args):
         if args.start > args.end:
             raise ValueError('Start date must be before end date')
 
+def print_task(task: dict):
+    print(f"\t        Task ID: {task['id']}")
+    print(f"\t    Task Status: {task['status']}")
+    print(f"\t      Task Type: {task['command']}")
+    print(f"\t      Data Type: {task['data_type']}")
+    print(f"\t   Time Created: {task['time_created']}")
+    print(f"\t  Time Modified: {task['time_modified']}")
+    if 'open_steps' in task and 'total_steps' in task and task['total_steps'] > 0:
+        print(f"\tRemaining Steps: {task['open_steps']} of {task['total_steps']}")
+
+def discover(args):
+    data = {}
+    urls = []
+    if args.type.lower() == 'positions':
+        urls.append("http://127.0.0.1:8000/nfl_data/v1/positions/")
+
+    elif args.type.lower() == 'teams':
+        urls.append("http://127.0.0.1:8000/nfl_data/v1/teams/")
+        data = {
+            'start': args.start,
+            'end': args.end
+        }
+    elif args.type.lower() == 'players':
+        urls.append("http://127.0.0.1:8000/nfl_data/v1/players/")
+    elif args.type.lower() == 'all':
+        urls = [
+            "http://127.0.0.1:8000/nfl_data/v1/positions/",
+            "http://127.0.0.1:8000/nfl_data/v1/teams/",
+            "http://127.0.0.1:8000/nfl_data/v1/players/"
+        ]
+        data = {
+            'start': args.start,
+            'end': args.end
+        }
+    else:
+        raise ValueError(f"Invalid type to discover: {args.type}")
+
+    task_ids = []
+    for url in urls:
+        response = requests.post(url, data=json.dumps(data))
+        if response.status_code != 201:
+            raise RuntimeError(f"Failed to start discovery of {args.type}")
+        task_ids.append(response.json()['id'])
+        print_task(response.json())
+        print("")
+
+    if args.wait:
+        for i in range(0,500):
+            complete = True
+            for id in task_ids:
+                url = f"http://127.0.0.1:8000/nfl_data/v1/tasks/{id}"
+                response = requests.get(url)
+                if response.status_code != 200:
+                    # Exception
+                    pass
+
+                if response.json()['status'] != 'COMPLETED':
+                    complete = False
+            if complete:
+                print("Discovery task(s) completed")
+                break
+            time.sleep(1)
+
+def collect(args):
+    url = "http://127.0.0.1:8000/nfl_data/v1/tasks/"
+    if args.type.lower() == 'positions':
+        data = {
+            "command": "collect",
+            "data_type": "positions"
+        }
+    elif args.type.lower() == 'teams':
+        data = {
+            "command": "collect",
+            "data_type": "teams"
+        }
+    elif args.type.lower() == 'players':
+        data = {
+            'command': 'collect',
+            'data_type': 'players'
+        }
+    else:
+        raise ValueError(f"Invalid type to collect: {args.type}")
+
+    response = requests.post(url, data=json.dumps(data))
+    if response.status_code != 201:
+        raise RuntimeError(f"Failed to start discovery of {args.type}")
+    print_task(response.json())
 
 def main():
     args = process_args()
 
     if args.command.lower() == 'discover':
-        # TODO: Functions
-        if args.type.lower() == 'positions':
-            url = "http://127.0.0.1:8000/nfl_data/v1/positions/"
-            data = {}
-        elif args.type.lower() == 'teams':
-            url = "http://127.0.0.1:8000/nfl_data/v1/teams/"
-            data = {
-                'start': args.start,
-                'end': args.end
-            }
-        elif args.type.lower() == 'players':
-            url = "http://127.0.0.1:8000/nfl_data/v1/players/"
-            data = {
-                'start': args.start,
-                'end': args.end
-            }
-        else:
-            raise ValueError(f"Invalid type to discover: {args.type}")
-
-        response = requests.post(url, data=json.dumps(data))
-        if response.status_code != 201:
-            print(response.status_code)
-            print(response.json())
-            raise RuntimeError(f"Failed to start discovery of {args.type}")
-
-        print(f"\t       Task ID: {response.json()['id']}")
-        print(f"\t   Task Status: {response.json()['status']}")
-        print(f"\t  Time Created: {response.json()['time_created']}")
-
+        discover(args)
     elif args.command.lower() == 'collect':
-        url = "http://127.0.0.1:8000/nfl_data/v1/tasks/"
-        if args.type.lower() == 'positions':
-            data = {
-                "command": "collect",
-                "data_type": "positions"
-            }
-        elif args.type.lower() == 'teams':
-            data = {
-                "command": "collect",
-                "data_type": "teams"
-            }
-        elif args.type.lower() == 'players':
-            data = {
-                'command': 'collect',
-                'data_type': 'players'
-            }
-        else:
-            raise ValueError(f"Invalid type to collect: {args.type}")
-
-        response = requests.post(url, data=json.dumps(data))
-        if response.status_code != 201:
-            print(response.status_code)
-            print(response.json())
-            raise RuntimeError(f"Failed to start discovery of {args.type}")
-
-        print(f"\t       Task ID: {response.json()['id']}")
-        print(f"\t   Task Status: {response.json()['status']}")
-        print(f"\t  Time Created: {response.json()['time_created']}")
-
+        collect(args)
     elif args.command.lower() == 'status':
         #TODO get task status
         url = f"http://127.0.0.1:8000/nfl_data/v1/tasks/{args.task_id}"
         response = requests.get(url)
-
-        print(f"\t        Task ID: {response.json()['id']}")
-        print(f"\t    Task Status: {response.json()['status']}")
-        print(f"\t   Time Created: {response.json()['time_created']}")
-        print(f"\t  Time Modified: {response.json()['time_modified']}")
-        if 'open_steps' in response.json() and 'total_steps' in response.json() and response.json()['total_steps'] > 0:
-                print(f"\tRemaining Steps: {response.json()['open_steps']} of {response.json()['total_steps']}")
+        print_task(response.json())
             #TODO: add verbose mode
     elif args.command.lower() == 'export':
         if args.type.lower() == 'positions':
