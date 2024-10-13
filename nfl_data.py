@@ -1,9 +1,6 @@
 import argparse
 import asyncio
 import json
-import time
-from datetime import datetime
-from typing import Optional
 from halo import Halo
 
 import pandas as pd
@@ -22,7 +19,7 @@ def process_args():
     parser.add_argument('--data_type', type=str, required=True, choices=['all','positions','teams','players'])
     parser.add_argument('--start', type=int)
     parser.add_argument('--end', type=int)
-    #parser.add_argument('--filename', type=str)
+    parser.add_argument('--dest', type=str)
     #parser.add_argument('--task_id', type=str)
     parser.add_argument("--wait",action='store_true' )
     args = parser.parse_args()
@@ -88,18 +85,6 @@ async def wait_on_task(id: str):
     if not found:
         raise RuntimeError(f"Failed to wait for collect tasks to complete")
 
-async def discover_all(args):
-    async with asyncio.TaskGroup() as tg:
-        positions = tg.create_task(
-            discover('positions', wait=args.wait)
-        )
-        teams = tg.create_task(
-            discover(type='teams', start=args.start, end=args.end, wait=args.wait)
-        )
-        players = tg.create_task(
-            discover('players', wait=args.wait)
-        )
-
 async def discover(type: str, start=None, end=None, wait=False):
     data = {}
     if type == 'positions':
@@ -125,104 +110,105 @@ async def discover(type: str, start=None, end=None, wait=False):
     if wait:
         await wait_on_task(id)
 
-async def collect_all(args):
-    async with asyncio.TaskGroup() as tg:
-        positions = tg.create_task(
-            collect(data_type='positions', wait=args.wait)
-        )
-        teams = tg.create_task(
-            collect(data_type='teams', wait=args.wait)
-        )
-        players = tg.create_task(
-            collect(data_type='players', wait=args.wait)
-        )
-
 async def collect(data_type:str, wait=False):
     id = create_task(command='collect', data_type=data_type)
 
     if wait:
         await wait_on_task(id)
 
+async def export(data_type: str, dest: str):
+    base_url = 'http://127.0.0.1:8000/nfl_data/v1'
 
-async def positions(command:str, wait=False):
+    response = requests.get(f"{base_url}/{data_type}/")
+    if response.status_code != 200:
+        raise RuntimeError(f"Failed to export {data_type} data")#
+
+    data = response.json()
+    df = pd.DataFrame(data)
+    df = df.set_index("id")
+    df.to_csv(f'{dest}/{data_type}.csv')
+
+async def positions(command:str, dest = None, wait=False):
     if command == 'discover' or 'all':
-        spinner = Halo(f"Discovering positions\n")
-        spinner.start()
+        spinner = Halo(f"\nDiscovering positions")
+        spinner.start(f"\rDiscovering positions")
         await discover(type='positions', wait=wait)
-        spinner.succeed("Discovered positions\n")
+        spinner.succeed("\nDiscovered positions")
 
     if command == 'collect' or 'all':
-        spinner = Halo(f"Collecting position data\n")
-        spinner.start()
+        spinner = Halo(f"\nCollecting position data")
+        spinner.start(f"\rCollecting position data")
         await collect(data_type='positions', wait=wait)
-        spinner.succeed("Collected position data\n")
+        spinner.succeed("\nCollected position data")
 
-async def teams(command:str, start: str, end: str, wait=False):
+    if command == 'export' or 'all':
+        spinner = Halo(f"\nExporting position data")
+        spinner.start(f"\rExporting position data")
+        await export(data_type='positions', dest=dest)
+        spinner.succeed("\nExported position data")
+
+async def teams(command:str, start: str, end: str, dest=None, wait=False):
     if command == 'discover' or 'all':
-        spinner = Halo(f"Discovering teams\n")
-        spinner.start()
+        spinner = Halo(f"\nDiscovering teams")
+        spinner.start(f"\rDiscovering teams")
         await discover(type='teams', start=start, end=end, wait=wait)
-        spinner.succeed("Discovered teams\n")
+        spinner.succeed("\nDiscovered teams")
 
     if command == 'collect' or 'all':
-        spinner = Halo(f"Collecting team data\n")
-        spinner.start()
+        spinner = Halo(f"\nCollecting team data")
+        spinner.start(f"\rCollecting team data")
         await collect(data_type='teams', wait=wait)
-        spinner.succeed("Collected team data\n")
+        spinner.succeed("\nCollected team data")
 
-async def players(command:str, wait=False):
+    if command == 'export' or 'all':
+        spinner = Halo(f"\nExporting team data")
+        spinner.start(f"\rExporting team data")
+        await export(data_type='teams', dest=dest)
+        spinner.succeed("\nExported team data")
+
+async def players(command:str, dest=None, wait=False):
     if command == 'discover' or 'all':
-        spinner = Halo(f"Discovering playerss\n")
-        spinner.start()
+        spinner = Halo(f"\nDiscovering players")
+        spinner.start(f"\rDiscovering players")
         await discover(type='players', wait=wait)
         spinner.succeed("Discovered players\n")
 
     if command == 'collect' or 'all':
-        spinner = Halo(f"Collecting player data\n")
-        spinner.start()
+        spinner = Halo(f"\nCollecting player data")
+        spinner.start(f"\rCollecting player data")
         await collect(data_type='players', wait=wait)
-        spinner.succeed("Collected player data\n")
+        spinner.succeed("\nCollected player data")
+
+    if command == 'export' or 'all':
+        spinner = Halo(f"\nExporting player data")
+        spinner.start(f"\rExporting player data")
+        await export(data_type='players', dest=dest)
+        spinner.succeed("\nExported player data")
 
 
 async def main():
     args = process_args()
 
     if args.data_type.lower() == 'positions':
-        await positions(command=args.command, wait=args.wait)
+        await positions(command=args.command, dest=args.dest, wait=args.wait)
     elif args.data_type.lower() == 'teams':
-        await teams(command=args.command, start=args.start, end=args.end, wait=args.wait)
+        await teams(command=args.command, start=args.start, end=args.end, dest=args.dest, wait=args.wait)
     elif args.data_type.lower() == 'players':
-        await players(command=args.command, wait=args.wait)
+        await players(command=args.command, dest=args.dest, wait=args.wait)
     elif args.data_type.lower() == 'all':
-        await positions(command=args.command, wait=args.wait)
-        await teams(command=args.command, start=args.start, end=args.end, wait=args.wait)
-        await players(command=args.command, wait=args.wait)
+        async with asyncio.TaskGroup() as tg:
+            tg.create_task(
+                positions(command=args.command, dest=args.dest, wait=args.wait)
+            )
+            tg.create_task(
+                teams(command=args.command, start=args.start, end=args.end, dest=args.dest, wait=args.wait)
+            )
+            tg.create_task(
+                players(command=args.command, dest=args.dest, wait=args.wait)
+            )
     else:
         pass
 
-
-
-#    elif args.command.lower() == 'export':
-##        if args.type.lower() == 'positions':
- #           url = "http://127.0.0.1:8000/nfl_data/v1/positions/"
- #       elif args.type.lower() == 'teams':
- #           url = "http://127.0.0.1:8000/nfl_data/v1/teams/"
- ##       elif args.type.lower() == 'players':
-  ##          url = "http://127.0.0.1:8000/nfl_data/v1/players/"
-   #     else:
-   #         raise ValueError("Invalid type")#
-
-#        response = requests.get(url)
-#        if response.status_code != 200:
-#            raise RuntimeError(f"Failed to export {args.type} data")#
-
-#        data = response.json()
-#        df = pd.DataFrame(data)
-#        df = df.set_index("id")
-#        df.to_csv(args.filename)#
-
- #   else:
- #       pass
 
 
 if __name__ == '__main__':
