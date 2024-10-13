@@ -57,7 +57,6 @@ def task_callback(ch, method, properties, body):
         update_status(task_id=task_id, status='COMPLETED')
     elif command.lower() == 'collect':
         collect_handler(task_id, data_type)
-        #update_status(task_id=task_id, status='COMPLETED')
         # Keep the top level task as IN_PROGRESS and let the position queue handler manage status
     else:
         pass

@@ -178,7 +178,7 @@ def players_callback(ch, method, properties, body):
     args = (task_id,)
     cur.execute(stmt,args)
     rows = cur.fetchall()
-    logger.error(f"AMC: {len(rows)}")
+
     if len(rows) == 0:
         stmt = '''
         UPDATE tasks SET
