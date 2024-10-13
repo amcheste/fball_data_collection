@@ -57,7 +57,6 @@ def task_callback(ch, method, properties, body):
         update_status(task_id=task_id, status='COMPLETED')
     elif command.lower() == 'collect':
         collect_handler(task_id, data_type)
-        update_status(task_id=task_id, status='COMPLETED')
         # Keep the top level task as IN_PROGRESS and let the position queue handler manage status
     else:
         pass
@@ -80,6 +79,8 @@ def collect_handler(task_id: str, data_type: str):
         collect_positions(task_id)
     elif data_type.lower() == 'teams':
         collect_teams(task_id)
+    elif data_type.lower() == 'players':
+        collect_players(task_id)
 
 # TODO Move into their libraries
 def collect_positions(task_id: str):
@@ -149,6 +150,41 @@ def collect_teams(task_id: str):
         channel.queue_declare(queue='teams', durable=True)
         channel.basic_publish(exchange='',
             routing_key='teams',
+            body=json.dumps(data)
+        )
+
+def collect_players(task_id: str):
+    #
+    # Get list of pending items
+    stmt = '''
+    SELECT id, url FROM players WHERE name IS NULL;
+    '''
+    cur, conn = database.connect()
+    cur.execute(stmt)
+    results = cur.fetchall()
+
+    #
+    # Loop through and add to the positions task table and positions queue
+    for row in results:
+        logger.info(row)
+        stmt = '''
+        INSERT INTO player_collection(id, task_id, url)
+        VALUES(%s, %s, %s);
+        '''
+        args = (row[0], task_id, row[1])
+        cur, conn = database.connect()
+        cur.execute(stmt, args)
+        conn.commit()
+        data = {
+            'task_id': task_id,
+            'id': row[0],
+            'url': row[1],
+        }
+        connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+        channel = connection.channel()
+        channel.queue_declare(queue='players', durable=True)
+        channel.basic_publish(exchange='',
+            routing_key='players',
             body=json.dumps(data)
         )
 

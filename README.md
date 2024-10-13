@@ -28,14 +28,20 @@
 
 `$ python3 nfl_data.py discover --type=positions`
 
+`$ python3 nfl_data.py discover --all [--wait]`
+
 
 #### Collect
 
 `$ python3 nfl_data.py collect --type=positions`
 
+`$ python3 nfl_data.py collect --all [--wait]`
+
 #### Export
 
 `$ python3 nfl_data.py export --type=positions --filename=<...>`
+
+`$ python3 nfl_data.py export --all`
 
 ### OLD
 Data Types:
