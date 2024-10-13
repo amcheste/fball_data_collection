@@ -6,6 +6,7 @@ import logging
 
 from app.lib.positions import discover_positions
 from app.lib.teams import discover_teams
+from app.lib.players import discover_players
 from app.utils import database
 
 logging.basicConfig(level=logging.INFO)
@@ -71,6 +72,8 @@ def discover_handler(data_type: str, data: dict):
         discover_positions()
     elif data_type.lower() == 'teams':
         discover_teams(data)
+    elif data_type.lower() == 'players':
+        discover_players()
 
 def collect_handler(task_id: str, data_type: str):
     if data_type.lower() == 'positions':
@@ -78,7 +81,7 @@ def collect_handler(task_id: str, data_type: str):
     elif data_type.lower() == 'teams':
         collect_teams(task_id)
 
-
+# TODO Move into their libraries
 def collect_positions(task_id: str):
     #
     # Get list of pending items

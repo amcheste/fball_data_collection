@@ -65,7 +65,7 @@ async def list_teams_pending() -> int:
     response_model=Task,
     tags=["teams"],
 )
-async def discover_team(years: YearRange) -> int:
+async def discover_team(years: YearRange) -> Task:
     #
     # Accept task by creating new Task instance stored in the DB.
     task = await create_task('discover', 'positions')
@@ -86,56 +86,6 @@ async def discover_team(years: YearRange) -> int:
     #
     # Return the task object to the user
     return task
-
-
-
-
-    #        async with await db_connection_pool.get_connection() as db_conn:
-    #            position = await get_team(db_conn, id)
-    #            if position is not None:
-    #                continue
-
-    #            await init_team(db_conn, id)
-    #            connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
-    #            channel = connection.channel()
-    #            channel.queue_declare(queue='teams', durable=True)
-    #            channel.basic_publish(exchange='',
-    #                                  routing_key='teams',
-    #                                  body=item['$ref']
-    #            )
-    #        count = count + 1
-
-    #    page_count = response.json().get("pageCount")
-    #    page = response.json().get("pageIndex")
-
-    #    while page < page_count:
-    #        response = requests.get(f"{url}?page={page + 1}")
-    #        if response.status_code != 200:
-    #            print(f"Failed to get page number {page} of positions")  # TODO logger?
-    #            # TODO: Exception
-
-    #        for item in response.json().get("items"):
-    #            tmp = urllib.parse.urlparse(item['$ref'])
-    #            id = int(tmp.path.split("/")[-1])
-    #            async with await db_connection_pool.get_connection() as db_conn:
-    #                position = await get_team(db_conn, id)
-    #                if position is not None:
-    #                    continue
-
-    #                await init_team(db_conn, id)
-    #                connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
-    #                channel = connection.channel()
-    #                channel.queue_declare(queue='teams', durable=True)
-    #                channel.basic_publish(exchange='',
-    #                                      routing_key='teams',
-    #                                      body=item['$ref']
-    #                )
-    #                count = count + 1
-    #        page = page + 1
-
-    #    year = year + 1
-
-    #return count
 
 @router.get(
     "/{id}",

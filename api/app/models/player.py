@@ -27,3 +27,4 @@ class Player(BaseModel):
     age: Optional[int] = None
     team: Optional[int] = None
     stats_log: Optional[str] = None #???
+    url: str

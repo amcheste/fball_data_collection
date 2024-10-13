@@ -9,7 +9,6 @@ import logging
 
 from app.utils import database
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -53,8 +52,8 @@ def discover_teams(data: dict):
                     id = int(tmp.path.split("/")[-1])
 
                     stmt = '''
-                        INSERT INTO teams (id, url)
-                        VALUES (%s, %s);
+                    INSERT INTO teams (id, url)
+                    VALUES (%s, %s);
                     '''
                     args = (id, item['$ref'])
                     try:
