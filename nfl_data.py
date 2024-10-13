@@ -101,7 +101,74 @@ def discover(args):
         print("")
 
     if args.wait:
-        for i in range(0,500):
+        found = False
+        for i in range(0,5000):
+            complete = True # TODO could we do coroutines here?
+            for id in task_ids:
+                url = f"http://127.0.0.1:8000/nfl_data/v1/tasks/{id}"
+                response = requests.get(url)
+                if response.status_code != 200:
+                    # Exception
+                    pass
+
+                if response.json()['status'] != 'COMPLETED':
+                    complete = False
+            if complete:
+                print("Discovery task(s) completed")
+                found = True
+                break
+            time.sleep(1)
+        if not found:
+            raise RuntimeError(f"Failed to wait for discovery tasks to complete")
+
+def collect(args):
+    url = "http://127.0.0.1:8000/nfl_data/v1/tasks/"
+    tasks = []
+
+    if args.type.lower() == 'positions':
+        tasks.append({
+            "command": "collect",
+            "data_type": "positions"
+        })
+    elif args.type.lower() == 'teams':
+        tasks.append({
+            "command": "collect",
+            "data_type": "teams"
+        })
+    elif args.type.lower() == 'players':
+        tasks.append({
+            'command': 'collect',
+            'data_type': 'players'
+        })
+    elif args.type.lower() == 'all':
+        tasks = [
+            {
+                "command": "collect",
+                "data_type": "positions"
+            },
+            {
+                "command": "collect",
+                "data_type": "teams"
+            },
+            {
+                "command": "collect",
+                "data_type": "players"
+            }
+        ]
+    else:
+        raise ValueError(f"Invalid type to collect: {args.type}")
+    task_ids = []
+    for task in tasks:
+        response = requests.post(url, data=json.dumps(task))
+        if response.status_code != 201:
+            raise RuntimeError(f"Failed to start discovery of {args.type}")
+        task_ids.append(response.json()['id'])
+        print_task(response.json())
+        print("")
+
+    if args.wait:
+        found = False
+        for i in range(0,6400):
             complete = True
             for id in task_ids:
                 url = f"http://127.0.0.1:8000/nfl_data/v1/tasks/{id}"
@@ -114,33 +181,12 @@ def discover(args):
                     complete = False
             if complete:
                 print("Discovery task(s) completed")
+                found = True
                 break
             time.sleep(1)
+        if not found:
+            raise RuntimeError(f"Failed to wait for collect tasks to complete")
 
-def collect(args):
-    url = "http://127.0.0.1:8000/nfl_data/v1/tasks/"
-    if args.type.lower() == 'positions':
-        data = {
-            "command": "collect",
-            "data_type": "positions"
-        }
-    elif args.type.lower() == 'teams':
-        data = {
-            "command": "collect",
-            "data_type": "teams"
-        }
-    elif args.type.lower() == 'players':
-        data = {
-            'command': 'collect',
-            'data_type': 'players'
-        }
-    else:
-        raise ValueError(f"Invalid type to collect: {args.type}")
-
-    response = requests.post(url, data=json.dumps(data))
-    if response.status_code != 201:
-        raise RuntimeError(f"Failed to start discovery of {args.type}")
-    print_task(response.json())
 
 def main():
     args = process_args()
