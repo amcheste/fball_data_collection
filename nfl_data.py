@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import datetime
 import json
 from halo import Halo
 
@@ -35,17 +36,17 @@ def process_args():
 
 def validate_args(args):
     print(args)
-    #if args.start is not None and args.end is not None:
-    #    # TODO magic number
-    #    if args.start < 1920:
-    #        raise ValueError('Start must be at least 1920')
+    if args.start is not None and args.end is not None:
+        # TODO magic number
+        if args.start < 1920:
+            raise ValueError('Start must be at least 1920')
 
-    #    current_year = datetime.now().year
-    #    if args.end > current_year:
-    #        raise ValueError('End must be less than current year')
+        current_year = datetime.datetime.now().year
+        if args.end > current_year:
+            raise ValueError('End must be less than current year')
 
-    #    if args.start > args.end:
-    #        raise ValueError('Start date must be before end date')
+        if args.start > args.end:
+            raise ValueError('Start date must be before end date')
 
 def print_task(task: dict):
     print(f"\t        Task ID: {task['id']}")
@@ -128,58 +129,59 @@ async def export(data_type: str, dest: str):
     df = df.set_index("id")
     df.to_csv(f'{dest}/{data_type}.csv')
 
+# TODO simplify?
 async def positions(command:str, dest = None, wait=False):
-    if command == 'discover' or 'all':
+    if command == 'discover' or command == 'all':
         spinner = Halo(f"\nDiscovering positions")
         spinner.start(f"\rDiscovering positions")
         await discover(type='positions', wait=wait)
         spinner.succeed("\nDiscovered positions")
 
-    if command == 'collect' or 'all':
+    if command == 'collect' or command == 'all':
         spinner = Halo(f"\nCollecting position data")
         spinner.start(f"\rCollecting position data")
         await collect(data_type='positions', wait=wait)
         spinner.succeed("\nCollected position data")
 
-    if command == 'export' or 'all':
+    if command == 'export' or command == 'all':
         spinner = Halo(f"\nExporting position data")
         spinner.start(f"\rExporting position data")
         await export(data_type='positions', dest=dest)
         spinner.succeed("\nExported position data")
 
 async def teams(command:str, start: str, end: str, dest=None, wait=False):
-    if command == 'discover' or 'all':
+    if command == 'discover' or command == 'all':
         spinner = Halo(f"\nDiscovering teams")
         spinner.start(f"\rDiscovering teams")
         await discover(type='teams', start=start, end=end, wait=wait)
         spinner.succeed("\nDiscovered teams")
 
-    if command == 'collect' or 'all':
+    if command == 'collect' or command == 'all':
         spinner = Halo(f"\nCollecting team data")
         spinner.start(f"\rCollecting team data")
         await collect(data_type='teams', wait=wait)
         spinner.succeed("\nCollected team data")
 
-    if command == 'export' or 'all':
+    if command == 'export' or command == 'all':
         spinner = Halo(f"\nExporting team data")
         spinner.start(f"\rExporting team data")
         await export(data_type='teams', dest=dest)
         spinner.succeed("\nExported team data")
 
 async def players(command:str, dest=None, wait=False):
-    if command == 'discover' or 'all':
+    if command == 'discover' or command == 'all':
         spinner = Halo(f"\nDiscovering players")
         spinner.start(f"\rDiscovering players")
         await discover(type='players', wait=wait)
         spinner.succeed("Discovered players\n")
 
-    if command == 'collect' or 'all':
+    if command == 'collect' or command == 'all':
         spinner = Halo(f"\nCollecting player data")
         spinner.start(f"\rCollecting player data")
         await collect(data_type='players', wait=wait)
         spinner.succeed("\nCollected player data")
 
-    if command == 'export' or 'all':
+    if command == 'export' or command == 'all':
         spinner = Halo(f"\nExporting player data")
         spinner.start(f"\rExporting player data")
         await export(data_type='players', dest=dest)
