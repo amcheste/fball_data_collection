@@ -11,10 +11,12 @@ class Player(BaseModel):
     :param height: NFL Player height (e.g. 74.0).
     :param experience: NFL Player's years of experience (e.g. 6).
     :param active: NFL Player's active status (e.g. True).'
-    :param status: NFL Player's current status (e.g. True FA).'
+    :param status: NFL Player's current status (e.g. FA).'
     :param position: NFL Player's current position (e.g. 4).'
     :param age: NFL Player's current age (e.g. 28).'
-    :team team: NFL Player's team's ID (e.g. 5)
+    :param team: NFL Player's team's ID (e.g. 5)
+    :param stats_log: URL that contains pointers to all player stats
+    :param url: ESPN player url
     """
     id: int
     name: Optional[str]
@@ -26,5 +28,5 @@ class Player(BaseModel):
     position: Optional[int]
     age: Optional[int] = None
     team: Optional[int] = None
-    stats_log: Optional[str] = None #???
+    stats_log: Optional[str] = None
     url: str
