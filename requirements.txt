@@ -1,0 +1,1 @@
+halo @ git+https://github.com/frostming/halo.git@multiple-spinners
