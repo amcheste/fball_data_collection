@@ -1,8 +1,10 @@
 import argparse
+import asyncio
+import datetime
 import json
-from datetime import datetime
-import pandas as pd
+from halo import Halo
 
+import pandas as pd
 import requests
 
 
@@ -14,12 +16,13 @@ def process_args():
     )
 
     # TODO: Fill out help etc
-    parser.add_argument('command', type=str)
-    parser.add_argument('--type')
+    parser.add_argument('command', type=str, choices=['all', 'discover', 'collect', 'export', 'status'])
+    parser.add_argument('--data_type', type=str, required=True, choices=['all','positions','teams','players'])
     parser.add_argument('--start', type=int)
     parser.add_argument('--end', type=int)
-    parser.add_argument('--filename', type=str)
-    parser.add_argument('--task_id', type=str)
+    parser.add_argument('--dest', type=str)
+    #parser.add_argument('--task_id', type=str)
+    parser.add_argument("--wait",action='store_true' )
     args = parser.parse_args()
 
     try:
@@ -31,128 +34,184 @@ def process_args():
 
     return args
 
-
 def validate_args(args):
     print(args)
-    valid_commands = ['discover','collect', 'export', 'status']
-    if args.command.lower() not in valid_commands:
-        raise ValueError('Command must be "collect" or "export"')
-    # TODO constants
-    if args.type is not None:
-        data_types = ['all', 'positions', 'teams', 'players', 'games']
-        if args.type.lower() not in data_types:
-            raise ValueError(f"Type must be one of {data_types}")
-
     if args.start is not None and args.end is not None:
         # TODO magic number
         if args.start < 1920:
             raise ValueError('Start must be at least 1920')
 
-        current_year = datetime.now().year
+        current_year = datetime.datetime.now().year
         if args.end > current_year:
             raise ValueError('End must be less than current year')
 
         if args.start > args.end:
             raise ValueError('Start date must be before end date')
 
+def print_task(task: dict):
+    print(f"\t        Task ID: {task['id']}")
+    print(f"\t    Task Status: {task['status']}")
+    print(f"\t      Task Type: {task['command']}")
+    print(f"\t      Data Type: {task['data_type']}")
+    print(f"\t   Time Created: {task['time_created']}")
+    print(f"\t  Time Modified: {task['time_modified']}")
+    if 'open_steps' in task and 'total_steps' in task and task['total_steps'] > 0:
+        print(f"\tRemaining Steps: {task['open_steps']} of {task['total_steps']}")
 
-def main():
+def create_task(command: str, data_type: str):
+    url = "http://127.0.0.1:8000/nfl_data/v1/tasks/"
+    task = {
+        "command": command,
+        "data_type": data_type,
+    }
+    response = requests.post(url, data=json.dumps(task))
+    if response.status_code != 201:
+        raise RuntimeError(f"Failed to start discovery of {data_type}")
+
+    return response.json()['id']
+
+async def wait_on_task(id: str):
+    found = False
+    for i in range(0, 6400):
+        url = f"http://127.0.0.1:8000/nfl_data/v1/tasks/{id}"
+        response = requests.get(url)
+        # if response.status_code != 200:
+        # # Exception
+        #                    pass
+        if response.json()['status'] == 'COMPLETED':
+            found = True
+            break
+        await asyncio.sleep(1)
+
+    if not found:
+        raise RuntimeError(f"Failed to wait for collect tasks to complete")
+
+async def discover(type: str, start=None, end=None, wait=False):
+    data = {}
+    if type == 'positions':
+        url = "http://127.0.0.1:8000/nfl_data/v1/positions/"
+    elif type == 'teams':
+        url = "http://127.0.0.1:8000/nfl_data/v1/teams/"
+        data = {
+            'start': start,
+            'end': end
+        }
+    elif type == 'players':
+        url = "http://127.0.0.1:8000/nfl_data/v1/players/"
+    else:
+        raise ValueError(f"Invalid type to discover: {type}")
+
+    response = requests.post(url, data=json.dumps(data))
+    if response.status_code != 201:
+        raise RuntimeError(f"Failed to start discovery of {type}")
+    #print_task(response.json())
+    #print("")
+
+    id = response.json()['id']
+    if wait:
+        await wait_on_task(id)
+
+async def collect(data_type:str, wait=False):
+    id = create_task(command='collect', data_type=data_type)
+
+    if wait:
+        await wait_on_task(id)
+
+async def export(data_type: str, dest: str):
+    base_url = 'http://127.0.0.1:8000/nfl_data/v1'
+
+    response = requests.get(f"{base_url}/{data_type}/")
+    if response.status_code != 200:
+        raise RuntimeError(f"Failed to export {data_type} data")#
+
+    data = response.json()
+    df = pd.DataFrame(data)
+    df = df.set_index("id")
+    df.to_csv(f'{dest}/{data_type}.csv')
+
+# TODO simplify?
+async def positions(command:str, dest = None, wait=False):
+    if command == 'discover' or command == 'all':
+        spinner = Halo(f"\nDiscovering positions")
+        spinner.start(f"\rDiscovering positions")
+        await discover(type='positions', wait=wait)
+        spinner.succeed("\nDiscovered positions")
+
+    if command == 'collect' or command == 'all':
+        spinner = Halo(f"\nCollecting position data")
+        spinner.start(f"\rCollecting position data")
+        await collect(data_type='positions', wait=wait)
+        spinner.succeed("\nCollected position data")
+
+    if command == 'export' or command == 'all':
+        spinner = Halo(f"\nExporting position data")
+        spinner.start(f"\rExporting position data")
+        await export(data_type='positions', dest=dest)
+        spinner.succeed("\nExported position data")
+
+async def teams(command:str, start: str, end: str, dest=None, wait=False):
+    if command == 'discover' or command == 'all':
+        spinner = Halo(f"\nDiscovering teams")
+        spinner.start(f"\rDiscovering teams")
+        await discover(type='teams', start=start, end=end, wait=wait)
+        spinner.succeed("\nDiscovered teams")
+
+    if command == 'collect' or command == 'all':
+        spinner = Halo(f"\nCollecting team data")
+        spinner.start(f"\rCollecting team data")
+        await collect(data_type='teams', wait=wait)
+        spinner.succeed("\nCollected team data")
+
+    if command == 'export' or command == 'all':
+        spinner = Halo(f"\nExporting team data")
+        spinner.start(f"\rExporting team data")
+        await export(data_type='teams', dest=dest)
+        spinner.succeed("\nExported team data")
+
+async def players(command:str, dest=None, wait=False):
+    if command == 'discover' or command == 'all':
+        spinner = Halo(f"\nDiscovering players")
+        spinner.start(f"\rDiscovering players")
+        await discover(type='players', wait=wait)
+        spinner.succeed("Discovered players\n")
+
+    if command == 'collect' or command == 'all':
+        spinner = Halo(f"\nCollecting player data")
+        spinner.start(f"\rCollecting player data")
+        await collect(data_type='players', wait=wait)
+        spinner.succeed("\nCollected player data")
+
+    if command == 'export' or command == 'all':
+        spinner = Halo(f"\nExporting player data")
+        spinner.start(f"\rExporting player data")
+        await export(data_type='players', dest=dest)
+        spinner.succeed("\nExported player data")
+
+
+async def main():
     args = process_args()
 
-    if args.command.lower() == 'discover':
-        # TODO: Functions
-        if args.type.lower() == 'positions':
-            url = "http://127.0.0.1:8000/nfl_data/v1/positions/"
-            data = {}
-        elif args.type.lower() == 'teams':
-            url = "http://127.0.0.1:8000/nfl_data/v1/teams/"
-            data = {
-                'start': args.start,
-                'end': args.end
-            }
-        elif args.type.lower() == 'players':
-            url = "http://127.0.0.1:8000/nfl_data/v1/players/"
-            data = {
-                'start': args.start,
-                'end': args.end
-            }
-        else:
-            raise ValueError(f"Invalid type to discover: {args.type}")
-
-        response = requests.post(url, data=json.dumps(data))
-        if response.status_code != 201:
-            print(response.status_code)
-            print(response.json())
-            raise RuntimeError(f"Failed to start discovery of {args.type}")
-
-        print(f"\t       Task ID: {response.json()['id']}")
-        print(f"\t   Task Status: {response.json()['status']}")
-        print(f"\t  Time Created: {response.json()['time_created']}")
-
-    elif args.command.lower() == 'collect':
-        url = "http://127.0.0.1:8000/nfl_data/v1/tasks/"
-        if args.type.lower() == 'positions':
-            data = {
-                "command": "collect",
-                "data_type": "positions"
-            }
-        elif args.type.lower() == 'teams':
-            data = {
-                "command": "collect",
-                "data_type": "teams"
-            }
-        elif args.type.lower() == 'players':
-            data = {
-                'command': 'collect',
-                'data_type': 'players'
-            }
-        else:
-            raise ValueError(f"Invalid type to collect: {args.type}")
-
-        response = requests.post(url, data=json.dumps(data))
-        if response.status_code != 201:
-            print(response.status_code)
-            print(response.json())
-            raise RuntimeError(f"Failed to start discovery of {args.type}")
-
-        print(f"\t       Task ID: {response.json()['id']}")
-        print(f"\t   Task Status: {response.json()['status']}")
-        print(f"\t  Time Created: {response.json()['time_created']}")
-
-    elif args.command.lower() == 'status':
-        #TODO get task status
-        url = f"http://127.0.0.1:8000/nfl_data/v1/tasks/{args.task_id}"
-        response = requests.get(url)
-
-        print(f"\t        Task ID: {response.json()['id']}")
-        print(f"\t    Task Status: {response.json()['status']}")
-        print(f"\t   Time Created: {response.json()['time_created']}")
-        print(f"\t  Time Modified: {response.json()['time_modified']}")
-        if 'open_steps' in response.json() and 'total_steps' in response.json() and response.json()['total_steps'] > 0:
-                print(f"\tRemaining Steps: {response.json()['open_steps']} of {response.json()['total_steps']}")
-            #TODO: add verbose mode
-    elif args.command.lower() == 'export':
-        if args.type.lower() == 'positions':
-            url = "http://127.0.0.1:8000/nfl_data/v1/positions/"
-        elif args.type.lower() == 'teams':
-            url = "http://127.0.0.1:8000/nfl_data/v1/teams/"
-        elif args.type.lower() == 'players':
-            url = "http://127.0.0.1:8000/nfl_data/v1/players/"
-        else:
-            raise ValueError("Invalid type")
-
-        response = requests.get(url)
-        if response.status_code != 200:
-            raise RuntimeError(f"Failed to export {args.type} data")
-
-        data = response.json()
-        df = pd.DataFrame(data)
-        df = df.set_index("id")
-        df.to_csv(args.filename)
-
+    if args.data_type.lower() == 'positions':
+        await positions(command=args.command, dest=args.dest, wait=args.wait)
+    elif args.data_type.lower() == 'teams':
+        await teams(command=args.command, start=args.start, end=args.end, dest=args.dest, wait=args.wait)
+    elif args.data_type.lower() == 'players':
+        await players(command=args.command, dest=args.dest, wait=args.wait)
+    elif args.data_type.lower() == 'all':
+        async with asyncio.TaskGroup() as tg:
+            tg.create_task(
+                positions(command=args.command, dest=args.dest, wait=args.wait)
+            )
+            tg.create_task(
+                teams(command=args.command, start=args.start, end=args.end, dest=args.dest, wait=args.wait)
+            )
+            tg.create_task(
+                players(command=args.command, dest=args.dest, wait=args.wait)
+            )
     else:
         pass
 
 
+
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
