@@ -7,7 +7,7 @@ import psycopg
 import requests
 import logging
 
-from app.utils import database
+from ..utils import database
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -155,6 +155,11 @@ def players_callback(ch, method, properties, body):
     cur, conn = database.connect()
     cur.execute(stmt, args)
     conn.commit()
+    #logger.error(json.dumps(data, indent=4))
+    logger.error(data['id'])
+    if 'statisticslog' in data:
+        logger.error(data['statisticslog']['$ref'])
+        get_player_stats(player_id=data['id'], url=data['statisticslog']['$ref'])
 
     #
     # Update status for this player
@@ -209,13 +214,68 @@ def get_team_id(url: str):
         if tmp[i] == 'teams':
             return tmp[i+1]
 
+def get_player_stats(player_id:str, url: str):
+   # logger.error(f"Calling {url}...")
+    response = requests.get(url)
+    data = response.json()
 
+    for entry in data['entries']:
+        #logger.error(json.dumps(entry, indent=4))
+        season_id = get_season_id(entry['season']['$ref'])
 
-    #    if 'statistics' in data:
-    #        tmp['statistics'] = data['statistics']
-    #    if 'statisticslog' in data:
-    #        tmp['stats_url'] = data['statisticslog']['$ref']
+        for stats in entry['statistics']:
+            if stats['type'] == 'total':
+                get_season_stats(player_id, season_id, stats['statistics']['$ref'])
 
+def get_season_id(url: str):
+    # http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2023?lang=en&region=us
+    #logger.error(url)
+    tmp = urllib.parse.urlparse(url)
+    tmp = tmp.path.split("/")
+    for i in range(len(tmp)):
+        if tmp[i] == 'seasons':
+            return tmp[i+1]
+
+def get_season_stats(player_id: str, season_id: str, url: str):
+    logger.info(f"AMC: {season_id} -> {url}")
+    response = requests.get(url)
+    data = response.json()
+    #logger.info(json.dumps(data,indent=4))
+
+    type = data['splits']['type']
+    logger.info(f'Type = {type}')
+    categories = data['splits']['categories']
+    for category in categories:
+        name = category['name']
+        logger.info(f'\tCategory = {name}')
+        stats = category['stats']
+        for stat in stats:
+            if 'perGameValue' not in stat:
+                stat['perGameValue'] = None
+                #stat['perGameValue'] = 0
+            if 'rank' not in stat:
+                stat['rank'] = None
+            logger.info(f"player_id={player_id}, type={type}, season_id={season_id}, name={name}")
+            logger.info(f"value={stat['value']}")
+            logger.info(f"perGameValue={stat['perGameValue']}")
+            logger.info(f"rank={stat['rank']}")
+
+            stmt = '''
+            INSERT INTO player_stats (
+                player_id, 
+                season_id, 
+                type, 
+                category,
+                name,
+                value,
+                perGameValue,
+                rank
+            ) VALUES(%s,%s,%s,%s,%s,%s,%s,%s);
+            '''
+            args=(player_id, season_id, type, name, stat['name'], stat['value'], stat['perGameValue'], stat['rank'])
+            cur, conn = database.connect()
+            cur.execute(stmt, args)
+            conn.commit()
 #{
 #    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/4429202/statisticslog?lang=en&region=us",
 #    "entries": [

@@ -28,5 +28,5 @@ class Player(BaseModel):
     position: Optional[int]
     age: Optional[int] = None
     team: Optional[int] = None
-    stats_log: Optional[str] = None
+    stats_log: Optional[str] = None # needed now?
     url: str
