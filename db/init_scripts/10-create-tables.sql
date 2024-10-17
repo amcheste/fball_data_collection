@@ -64,9 +64,13 @@ CREATE TABLE player_collection(
 
 CREATE TABLE player_stats(
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- is this needed?
-    player_id INT REFERENCES players(id),
+    --player_id INT REFERENCES players(id),
+    player_id INT NOT NULL,
+    season_id INT NOT NULL,
     type VARCHAR(255) NOT NULL,
+    category VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
     value FLOAT NOT NULL,
-    perGameValue FLOAT NOT NULL,
-    rank INT NOT NULL
+    perGameValue FLOAT,
+    rank INT
 );
