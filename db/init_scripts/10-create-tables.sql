@@ -74,3 +74,14 @@ CREATE TABLE player_stats(
     perGameValue FLOAT,
     rank INT
 );
+
+CREATE TABLE team_stats(
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- is this needed?
+    team_id INT NOT NULL,
+    season_id INT NOT NULL,
+    category VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    value FLOAT NOT NULL,
+    perGameValue FLOAT,
+    rank INT
+);

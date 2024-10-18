@@ -129,7 +129,16 @@ async def export(data_type: str, dest: str):
     df = df.set_index("id")
     df.to_csv(f'{dest}/{data_type}.csv')
 
-    if data_type == 'players':
+    if data_type == 'teams' or data_type == 'all':
+        response = requests.get(f"{base_url}/team_stats/")
+        if response.status_code != 200:
+            raise RuntimeError(f"Failed to export player stast data")
+        data = response.json()
+        df = pd.DataFrame(data)
+        df = df.set_index("id")
+        df.to_csv(f'{dest}/team_stats.csv')
+
+    if data_type == 'players' or data_type == 'all':
         response = requests.get(f"{base_url}/player_stats/")
         if response.status_code != 200:
             raise RuntimeError(f"Failed to export player stast data")

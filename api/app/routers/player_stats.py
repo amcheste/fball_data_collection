@@ -1,8 +1,5 @@
-import json
-from typing import List
 from fastapi import APIRouter, status, HTTPException
 
-from app.models import PlayerStat
 from app.daos.player_stats import list_all_player_stats, list_player_stats
 
 router = APIRouter(

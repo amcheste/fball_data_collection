@@ -9,6 +9,8 @@ import logging
 
 from app.utils import database
 
+from app.lib.players import get_season_id
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -116,7 +118,36 @@ def teams_callback(ch, method, properties, body):
     cur.execute(stmt, args)
 
     conn.commit()
+    team_id=data['id']
+    tmp = requests.get(data['statistics']['$ref'])
+    data = tmp.json()
+    season_id = get_season_id(data['season']['$ref'])
+    categories = data['splits']['categories']
+    for category in categories:
+        name = category['name']
+        stats = category['stats']
+        for stat in stats:
+            if 'perGameValue' not in stat:
+                stat['perGameValue'] = None
+                #stat['perGameValue'] = 0
+            if 'rank' not in stat:
+                stat['rank'] = None
 
+            stmt = '''
+            INSERT INTO team_stats(
+                team_id,
+                season_id,
+                category,
+                name,
+                value,
+                perGameValue,
+                rank
+            )VALUES(%s,%s,%s,%s,%s,%s,%s);
+            '''
+            args = (team_id,season_id, name,stat['name'],stat['value'],stat['perGameValue'],stat['rank'])
+            cur, conn = database.connect()
+            cur.execute(stmt, args)
+            conn.commit()
     #
     # Update status for this position
     stmt = '''
@@ -125,7 +156,7 @@ def teams_callback(ch, method, properties, body):
         WHERE id = %s;
         '''
     # TODO time created/modified?
-    args = ('COMPLETED', data['id'])
+    args = ('COMPLETED', team_id)
     cur, conn = database.connect()
     cur.execute(stmt, args)
     conn.commit()
