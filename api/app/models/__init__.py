@@ -6,3 +6,4 @@ from app.models.task import Task, TaskInput, TaskDetailed
 from app.models.queue import Queue
 from app.models.player_stat import PlayerStat
 from app.models.team_stats import TeamStat
+from app.models.game import Game

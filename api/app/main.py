@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import positions, teams, players, tasks, player_stats, team_stats
+from app.routers import positions, teams, players, tasks, player_stats, team_stats, games
 
 """
 Tags used for OpenAPI documentation
@@ -42,7 +42,7 @@ app.include_router(players.router)
 app.include_router(tasks.router)
 app.include_router(player_stats.router)
 app.include_router(team_stats.router)
-
+app.include_router(games.router)
 
 """
 CORS Configuration

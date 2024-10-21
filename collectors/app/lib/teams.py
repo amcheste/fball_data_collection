@@ -7,9 +7,9 @@ import psycopg
 import requests
 import logging
 
-from app.utils import database
+from ..utils import database
 
-from app.lib.players import get_season_id
+from .players import get_season_id
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

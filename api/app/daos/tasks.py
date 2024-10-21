@@ -93,6 +93,10 @@ async def get_open_step_count(task_id: UUID, data_type: str) -> int:
         stmt = '''
         SELECT * FROM team_collection WHERE task_id = %s and status != 'COMPLETED';
         '''
+    elif data_type == 'games':
+        stmt = '''
+        SELECT * FROM game_collection WHERE task_id = %s and status != 'COMPLETED';
+        '''
     elif data_type == 'players':
         stmt = '''
         SELECT * FROM player_collection WHERE task_id = %s and status != 'COMPLETED';
@@ -127,6 +131,10 @@ async def get_step_list(task_id: UUID, data_type: str) -> List[Step]:
     elif data_type == 'teams':
         stmt = '''
         SELECT * FROM team_collection WHERE task_id = %s;
+        '''
+    elif data_type == 'games':
+        stmt = '''
+        SELECT * FROM game_collection WHERE task_id = %s;
         '''
     elif data_type == 'players':
         stmt = '''

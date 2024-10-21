@@ -13,6 +13,18 @@ CREATE TABLE teams (
     url VARCHAR(255) NOT NULL
 );
 
+CREATE TABLE games(
+    id INT PRIMARY KEY NOT NULL,
+    name VARCHAR(255),
+    abbreviation VARCHAR(25),
+    year INT,
+    week INT,
+    home VARCHAR(255),
+    away VARCHAR(255),
+    url VARCHAR(255) NOT NULL,
+    pbp_url VARCHAR(255)
+);
+
 CREATE TABLE players(
     id INT PRIMARY KEY NOT NULL,
     name VARCHAR(255),
@@ -28,7 +40,7 @@ CREATE TABLE players(
 );
 
 CREATE TYPE commands AS ENUM ('DISCOVER', 'COLLECT');
-CREATE TYPE data_types AS ENUM('positions', 'teams', 'players');
+CREATE TYPE data_types AS ENUM('positions', 'teams', 'games','players');
 CREATE TYPE status AS ENUM ('ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'FAILED');
 
 CREATE TABLE tasks(
@@ -49,6 +61,13 @@ CREATE TABLE position_collection(
 );
 
 CREATE TABLE team_collection(
+    id INT PRIMARY KEY NOT NULL,
+    task_id uuid REFERENCES tasks(id),
+    url VARCHAR(255) NOT NULL,
+    status status NOT NULL DEFAULT 'ACCEPTED'
+);
+
+CREATE TABLE game_collection(
     id INT PRIMARY KEY NOT NULL,
     task_id uuid REFERENCES tasks(id),
     url VARCHAR(255) NOT NULL,

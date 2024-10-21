@@ -7,6 +7,7 @@ import logging
 from app.lib.positions import discover_positions
 from app.lib.teams import discover_teams
 from app.lib.players import discover_players
+from app.lib.games import discover_games
 from app.utils import database
 
 logging.basicConfig(level=logging.INFO)
@@ -71,6 +72,8 @@ def discover_handler(data_type: str, data: dict):
         discover_positions()
     elif data_type.lower() == 'teams':
         discover_teams(data)
+    elif data_type.lower() == 'games':
+        discover_games(data)
     elif data_type.lower() == 'players':
         discover_players()
 

@@ -1,8 +1,5 @@
 import json
-
-import requests
 from fastapi import APIRouter, status, HTTPException
-
 from typing import List
 
 from app.daos.tasks import create_task
@@ -11,7 +8,7 @@ from app.models import Task
 from app.models import YearRange
 from app.models.team import Team
 from app.singleton import db_connection_pool
-from app.daos.teams import list_teams, init_team, get_pending_team_count, get_team
+from app.daos.teams import list_teams, get_pending_team_count, get_team
 
 """
     Create a router object for team API endpoints
