@@ -129,7 +129,7 @@ async def export(data_type: str, dest: str):
     response = requests.get(f"{base_url}/{data_type}/")
     if response.status_code != 200:
         raise RuntimeError(f"Failed to export {data_type} data")#
-    print(dest)
+
     data = response.json()
     df = pd.DataFrame(data)
     df = df.set_index("id")
