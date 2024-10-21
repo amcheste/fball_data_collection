@@ -21,6 +21,12 @@ CREATE TABLE games(
     week INT,
     home VARCHAR(255),
     away VARCHAR(255),
+    location VARCHAR(25),
+    grass BOOLEAN,
+    temperature INT,
+    condition INT,
+    gust INT,
+    precip INT,
     url VARCHAR(255) NOT NULL,
     pbp_url VARCHAR(255)
 );
@@ -103,4 +109,12 @@ CREATE TABLE team_stats(
     value FLOAT NOT NULL,
     perGameValue FLOAT,
     rank INT
+);
+
+CREATE TABLE game_stats(
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- is this needed?
+    game_id INT NOT NULL,
+    team_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    value VARCHAR(25) NOT NULL
 );

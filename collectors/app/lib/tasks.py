@@ -82,6 +82,8 @@ def collect_handler(task_id: str, data_type: str):
         collect_positions(task_id)
     elif data_type.lower() == 'teams':
         collect_teams(task_id)
+    elif data_type.lower() == 'games':
+        collect_games(task_id)
     elif data_type.lower() == 'players':
         collect_players(task_id)
 
@@ -153,6 +155,42 @@ def collect_teams(task_id: str):
         channel.queue_declare(queue='teams', durable=True)
         channel.basic_publish(exchange='',
             routing_key='teams',
+            body=json.dumps(data)
+        )
+
+def collect_games(task_id: str):
+    #
+    # Get list of pending items
+    stmt = '''
+    SELECT id, url, pbp_url FROM games WHERE name IS NULL;
+    '''
+    cur, conn = database.connect()
+    cur.execute(stmt)
+    results = cur.fetchall()
+
+    #
+    # Loop through and add to the positions task table and positions queue
+    for row in results:
+        logger.info(row)
+        stmt = '''
+        INSERT INTO game_collection(id, task_id, url)
+        VALUES(%s, %s, %s);
+        '''
+        args = (row[0], task_id, row[1])
+        cur, conn = database.connect()
+        cur.execute(stmt, args)
+        conn.commit()
+        data = {
+            'task_id': task_id,
+            'id': row[0],
+            'url': row[1],
+            'pbp_url': row[2],
+        }
+        connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+        channel = connection.channel()
+        channel.queue_declare(queue='games', durable=True)
+        channel.basic_publish(exchange='',
+            routing_key='games',
             body=json.dumps(data)
         )
 

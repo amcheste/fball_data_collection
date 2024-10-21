@@ -6,6 +6,7 @@ import requests
 from app.utils import database
 from app.lib.positions import collect_positions
 from app.lib.teams import collect_teams
+from app.lib.games import collect_games
 from app.lib.players import collect_players
 from app.lib.tasks import collect_tasks
 
@@ -56,6 +57,8 @@ def main():
         collect_positions()
     elif args.type.lower() == 'teams':
         collect_teams()
+    elif args.type.lower() == 'games':
+        collect_games()
     elif args.type.lower() == 'players':
         collect_players()
 
