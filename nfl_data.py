@@ -17,7 +17,7 @@ def process_args():
 
     # TODO: Fill out help etc
     parser.add_argument('command', type=str, choices=['all', 'discover', 'collect', 'export', 'status'])
-    parser.add_argument('--data_type', type=str, required=True, choices=['all','positions','teams','players'])
+    parser.add_argument('--data_type', type=str, required=True, choices=['all','positions','teams','games','players'])
     parser.add_argument('--start', type=int)
     parser.add_argument('--end', type=int)
     parser.add_argument('--dest', type=str)
@@ -92,6 +92,12 @@ async def discover(type: str, start=None, end=None, wait=False):
         url = "http://127.0.0.1:8000/nfl_data/v1/positions/"
     elif type == 'teams':
         url = "http://127.0.0.1:8000/nfl_data/v1/teams/"
+        data = {
+            'start': start,
+            'end': end
+        }
+    elif type == 'games':
+        url = "http://127.0.0.1:8000/nfl_data/v1/games/"
         data = {
             'start': start,
             'end': end
@@ -188,6 +194,13 @@ async def teams(command:str, start: str, end: str, dest=None, wait=False):
         await export(data_type='teams', dest=dest)
         spinner.succeed("\nExported team data")
 
+async def games(command:str, start: str, end: str, dest=None, wait=False):
+    if command == 'discover' or command == 'all':
+        spinner = Halo(f"\nDiscovering games")
+        spinner.start(f"\rDiscovering games")
+        await discover(type='games', start=start, end=end, wait=wait)
+        spinner.succeed("\nDiscovered games")
+
 async def players(command:str, dest=None, wait=False):
     if command == 'discover' or command == 'all':
         spinner = Halo(f"\nDiscovering players")
@@ -215,6 +228,8 @@ async def main():
         await positions(command=args.command, dest=args.dest, wait=args.wait)
     elif args.data_type.lower() == 'teams':
         await teams(command=args.command, start=args.start, end=args.end, dest=args.dest, wait=args.wait)
+    elif args.data_type.lower() == 'games':
+        await games(command=args.command, start=args.start, end=args.end, wait=args.wait)
     elif args.data_type.lower() == 'players':
         await players(command=args.command, dest=args.dest, wait=args.wait)
     elif args.data_type.lower() == 'all':
