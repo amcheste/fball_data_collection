@@ -17,7 +17,7 @@ router = APIRouter(
 @router.get(
     "/",
     summary="List all NFL games",
-    #response_model=List[Game],
+    response_model=List[Game],
     status_code=status.HTTP_200_OK,
     tags=["games"]
 )

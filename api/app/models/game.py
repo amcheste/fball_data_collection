@@ -11,4 +11,3 @@ class Game(BaseModel):
     away: Optional[str] = None
     url: str
     pbp_url: Optional[str] = None
-    box_url: Optional[str] = None

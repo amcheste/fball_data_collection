@@ -44,8 +44,6 @@ def discover_games(data: dict):
             except psycopg.errors.UniqueViolation:
                 continue
 
-           # 'https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=401671707'
-        # TODO pages?
         logger.info(json.dumps(response.json(), indent=4))
         page_count = response.json().get("pageCount")
         page = response.json().get("pageIndex")
