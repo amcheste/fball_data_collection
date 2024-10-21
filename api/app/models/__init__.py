@@ -7,3 +7,4 @@ from app.models.queue import Queue
 from app.models.player_stat import PlayerStat
 from app.models.team_stats import TeamStat
 from app.models.game import Game
+from app.models.game_stat import GameStat

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, HTTPException
+from fastapi import APIRouter, status
 
 from app.daos.player_stats import list_all_player_stats, list_player_stats
 

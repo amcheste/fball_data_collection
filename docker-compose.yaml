@@ -60,6 +60,18 @@ services:
       - "--type=teams"
       - "--mode=daemon"
 
+  game_collector:
+    build:
+        context: ./collectors
+    depends_on:
+      - rabbitmq
+      - database
+    command:
+      - "python3"
+      - "main.py"
+      - "--type=games"
+      - "--mode=daemon"
+
   player_collector:
     build:
         context: ./collectors

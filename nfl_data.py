@@ -129,7 +129,7 @@ async def export(data_type: str, dest: str):
     response = requests.get(f"{base_url}/{data_type}/")
     if response.status_code != 200:
         raise RuntimeError(f"Failed to export {data_type} data")#
-
+    print(dest)
     data = response.json()
     df = pd.DataFrame(data)
     df = df.set_index("id")
@@ -138,11 +138,20 @@ async def export(data_type: str, dest: str):
     if data_type == 'teams' or data_type == 'all':
         response = requests.get(f"{base_url}/team_stats/")
         if response.status_code != 200:
-            raise RuntimeError(f"Failed to export player stast data")
+            raise RuntimeError(f"Failed to export player stat data")
         data = response.json()
         df = pd.DataFrame(data)
         df = df.set_index("id")
         df.to_csv(f'{dest}/team_stats.csv')
+
+    if data_type == 'games' or data_type == 'all':
+        response = requests.get(f"{base_url}/game_stats/")
+        if response.status_code != 200:
+            raise RuntimeError(f"Failed to export game stat data")
+        data = response.json()
+        df = pd.DataFrame(data)
+        df = df.set_index("id")
+        df.to_csv(f'{dest}/game_stats.csv')
 
     if data_type == 'players' or data_type == 'all':
         response = requests.get(f"{base_url}/player_stats/")
@@ -201,6 +210,18 @@ async def games(command:str, start: str, end: str, dest=None, wait=False):
         await discover(type='games', start=start, end=end, wait=wait)
         spinner.succeed("\nDiscovered games")
 
+    if command == 'collect' or command == 'all':
+        spinner = Halo(f"\nCollecting game data")
+        spinner.start(f"\rCollecting game data")
+        await collect(data_type='games', wait=wait)
+        spinner.succeed("\nCollected game data")
+
+    if command == 'export' or command == 'all':
+        spinner = Halo(f"\nExporting game data")
+        spinner.start(f"\rExporting game data")
+        await export(data_type='games', dest=dest)
+        spinner.succeed("\nExported game data")
+
 async def players(command:str, dest=None, wait=False):
     if command == 'discover' or command == 'all':
         spinner = Halo(f"\nDiscovering players")
@@ -229,7 +250,7 @@ async def main():
     elif args.data_type.lower() == 'teams':
         await teams(command=args.command, start=args.start, end=args.end, dest=args.dest, wait=args.wait)
     elif args.data_type.lower() == 'games':
-        await games(command=args.command, start=args.start, end=args.end, wait=args.wait)
+        await games(command=args.command, start=args.start, end=args.end, dest=args.dest, wait=args.wait)
     elif args.data_type.lower() == 'players':
         await players(command=args.command, dest=args.dest, wait=args.wait)
     elif args.data_type.lower() == 'all':
@@ -239,6 +260,9 @@ async def main():
             )
             tg.create_task(
                 teams(command=args.command, start=args.start, end=args.end, dest=args.dest, wait=args.wait)
+            )
+            tg.create_task(
+                games(command=args.command, start=args.start, end=args.end, dest=args.dest, wait=args.wait)
             )
             tg.create_task(
                 players(command=args.command, dest=args.dest, wait=args.wait)
